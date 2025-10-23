@@ -1,5 +1,7 @@
+# backend/search/serializers.py
 from __future__ import annotations
 
+from dataclasses import asdict, is_dataclass        # ← 追加
 from rest_framework import serializers
 
 from .query import QueryValidationError, parse_payload
@@ -36,6 +38,9 @@ class SearchResponseSerializer(serializers.Serializer):
 
     @classmethod
     def from_response(cls, response: SearchResponse) -> dict:
-        serializer = cls(response.__dict__)
+        # dataclass（slots=True 含む）→ dict（ネストも展開）
+        payload = asdict(response) if is_dataclass(response) else response
+        # data として渡して検証してから返す
+        serializer = cls(data=payload)
         serializer.is_valid(raise_exception=True)
         return serializer.data

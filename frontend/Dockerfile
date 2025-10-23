@@ -1,4 +1,5 @@
-FROM node:20-alpine
+# 旧: FROM node:20-alpine
+FROM node:20-bullseye
 
 WORKDIR /app/frontend
 

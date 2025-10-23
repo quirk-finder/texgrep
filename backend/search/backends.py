@@ -186,7 +186,8 @@ def _index_definition() -> dict:
                 "tokenizer": {
                     "tex_tokenizer": {
                         "type": "pattern",
-                        "pattern": "\\s+",
+                        # 英数字と '\' 以外で分割（'\iiint', 'integral' が単独トークンになる）
+                        "pattern": "[^A-Za-z0-9\\\\]+"
                     }
                 },
                 "filter": {
@@ -219,9 +220,9 @@ def _index_definition() -> dict:
                     "analyzer": "tex_analyzer",
                     "search_analyzer": "tex_analyzer",
                     "term_vector": "with_positions_offsets",
-                    "fields": {
-                        "raw": {"type": "wildcard"},
-                    },
+                    # "fields": {
+                    #     "raw": {"type": "wildcard"},
+                    # },
                 },
             }
         },

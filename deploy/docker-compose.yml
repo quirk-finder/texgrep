@@ -5,6 +5,10 @@ services:
       dockerfile: backend/Dockerfile
     env_file:
       - ../.env
+    environment:
+      - PYTHONPATH=/app/backend:/app
+      - DJANGO_SETTINGS_MODULE=texgrep.settings
+      - OPENSEARCH_URL=http://opensearch:9200
     volumes:
       - ../backend:/app/backend
       - ../indexer:/app/indexer
@@ -14,8 +18,10 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - redis
-      - opensearch
+      opensearch:
+        condition: service_healthy
+      redis:
+        condition: service_started
     restart: unless-stopped
 
   worker:
@@ -24,14 +30,23 @@ services:
       dockerfile: backend/Dockerfile
     env_file:
       - ../.env
+    environment:
+      - PYTHONPATH=/app/backend:/app
+      - DJANGO_SETTINGS_MODULE=texgrep.settings
+      - OPENSEARCH_URL=http://opensearch:9200
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     volumes:
       - ../backend:/app/backend
       - ../indexer:/app/indexer
       - ../scripts:/app/scripts
+    # celery app 名はプロジェクトに合わせて。celery.py があるならこれでOK
     command: ["celery", "-A", "texgrep", "worker", "-l", "info"]
     depends_on:
-      - redis
-      - opensearch
+      opensearch:
+        condition: service_healthy
+      redis:
+        condition: service_started
     restart: unless-stopped
 
   frontend:
@@ -42,11 +57,13 @@ services:
       - ../.env
     volumes:
       - ../frontend:/app/frontend
+      - /app/frontend/node_modules
     command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
     ports:
       - "5173:5173"
     depends_on:
-      - backend
+      backend:
+        condition: service_started
     restart: unless-stopped
 
   redis:
@@ -69,9 +86,17 @@ services:
       nofile:
         soft: 65536
         hard: 65536
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 40
     ports:
       - "9200:9200"
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data   # ★ 追加
     restart: unless-stopped
 
 volumes:
   backend_static:
+  opensearch_data:
