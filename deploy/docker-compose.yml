@@ -1,0 +1,77 @@
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    env_file:
+      - ../.env
+    volumes:
+      - ../backend:/app/backend
+      - ../indexer:/app/indexer
+      - ../scripts:/app/scripts
+      - backend_static:/app/staticfiles
+    command: ["uvicorn", "texgrep.asgi:application", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+      - opensearch
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    env_file:
+      - ../.env
+    volumes:
+      - ../backend:/app/backend
+      - ../indexer:/app/indexer
+      - ../scripts:/app/scripts
+    command: ["celery", "-A", "texgrep", "worker", "-l", "info"]
+    depends_on:
+      - redis
+      - opensearch
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+    env_file:
+      - ../.env
+    volumes:
+      - ../frontend:/app/frontend
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  opensearch:
+    image: opensearchproject/opensearch:2.9.0
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+      - plugins.security.disabled=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "9200:9200"
+    restart: unless-stopped
+
+volumes:
+  backend_static:
