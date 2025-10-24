@@ -5,7 +5,7 @@ import re
 from dataclasses import dataclass
 from typing import Iterable, List, Tuple
 
-from .query import REGEX_TIMEOUT_SECONDS
+from .query import REGEX_TIMEOUT_SECONDS, decode_literal_query, decode_regex_query
 from .types import SearchMode, SearchRequest
 
 
@@ -18,12 +18,17 @@ class MatchResult:
 
 def find_match(content: str, request: SearchRequest) -> MatchResult | None:
     if request.mode == "literal":
-        start = content.find(request.query)
+        needle = decode_literal_query(request.query)
+        start = content.find(needle)
         if start == -1:
             return None
-        end = start + len(request.query)
+        end = start + len(needle)
     else:
-        pattern = re.compile(request.query, flags=re.MULTILINE, timeout=REGEX_TIMEOUT_SECONDS)
+        pattern_text = decode_regex_query(request.query)
+        try:
+            pattern = re.compile(pattern_text, flags=re.MULTILINE, timeout=REGEX_TIMEOUT_SECONDS)
+        except TypeError:  # pragma: no cover - Python < 3.11 fallback
+            pattern = re.compile(pattern_text, flags=re.MULTILINE)
         match = pattern.search(content)
         if not match:
             return None
@@ -64,7 +69,8 @@ def _offset_for_line(lines: List[str], target_line: int) -> int:
 def _extend_highlight(snippet_text: str, query: str, mode: SearchMode, start: int, end: int) -> List[Tuple[int, int]]:
     if mode == "literal":
         return [(start, end)]
-    pattern = re.compile(query, flags=re.MULTILINE)
+    pattern_text = decode_regex_query(query)
+    pattern = re.compile(pattern_text, flags=re.MULTILINE)
     spans: List[Tuple[int, int]] = []
     for match in pattern.finditer(snippet_text):
         spans.append(match.span())

@@ -4,8 +4,10 @@ import time
 from typing import Iterable, List, Sequence
 
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from opensearchpy import OpenSearch, helpers
 
+from . import opensearch_client
 from .snippets import build_snippet, find_match
 from .types import IndexDocument, SearchHit, SearchRequest, SearchResponse
 
@@ -26,7 +28,7 @@ class SearchBackendProtocol:
 
 class OpenSearchBackend(SearchBackendProtocol):
     def __init__(self, client: OpenSearch | None = None, index_name: str | None = None) -> None:
-        self.client = client or OpenSearch(hosts=[settings.OPENSEARCH_HOST], verify_certs=False)
+        self.client = client or opensearch_client.create_client()
         self.index_name = index_name or settings.OPENSEARCH_INDEX
 
     def create_index(self) -> None:
@@ -57,7 +59,7 @@ class OpenSearchBackend(SearchBackendProtocol):
         helpers.bulk(self.client, actions)
 
     def search(self, request: SearchRequest) -> SearchResponse:
-        query = _build_query(request)
+        query = opensearch_client.build_search_body(request)
         start = (request.page - 1) * request.size
         response = self.client.search(
             index=self.index_name,
@@ -97,7 +99,7 @@ class InMemorySearchBackend(SearchBackendProtocol):
             snippet = build_snippet(
                 doc.content,
                 match,
-                context_lines=settings.SEARCH_CONFIG["snippet_lines"],
+                context_lines=_snippet_lines(),
                 mode=request.mode,
                 query=request.query,
             )
@@ -118,28 +120,6 @@ class InMemorySearchBackend(SearchBackendProtocol):
         return SearchResponse(hits=slice_hits, total=len(matches), took_ms=took_ms)
 
 
-def _build_query(request: SearchRequest) -> dict:
-    must_clause: dict
-    if request.mode == "literal":
-        must_clause = {"match_phrase": {"content": request.query}}
-    else:
-        must_clause = {"regexp": {"content.raw": {"value": request.query}}}
-
-    filters = []
-    for key, value in request.filters.items():
-        if value:
-            filters.append({"term": {key: value}})
-
-    return {
-        "query": {
-            "bool": {
-                "must": must_clause,
-                "filter": filters,
-            }
-        }
-    }
-
-
 def _process_hits(raw_hits: Sequence[dict], request: SearchRequest) -> List[SearchHit]:
     results: List[SearchHit] = []
     for raw in raw_hits:
@@ -151,7 +131,7 @@ def _process_hits(raw_hits: Sequence[dict], request: SearchRequest) -> List[Sear
         snippet = build_snippet(
             content,
             match,
-            context_lines=settings.SEARCH_CONFIG["snippet_lines"],
+            context_lines=_snippet_lines(),
             mode=request.mode,
             query=request.query,
         )
@@ -171,6 +151,24 @@ def _index_definition() -> dict:
     return {
         "settings": {
             "analysis": {
+                "tokenizer": {
+                    "tex_tokenizer": {
+                        "type": "pattern",
+                        "pattern": r"\s+",
+                    }
+                },
+                "filter": {
+                    "command_edge": {
+                        "type": "edge_ngram",
+                        "min_gram": 1,
+                        "max_gram": 15,
+                    },
+                    "tex_ngram": {
+                        "type": "ngram",
+                        "min_gram": 2,
+                        "max_gram": 15,
+                    },
+                },
                 "analyzer": {
                     "tex_analyzer": {
                         "type": "custom",
@@ -182,20 +180,11 @@ def _index_definition() -> dict:
                         "tokenizer": "keyword",
                         "filter": ["command_edge"],
                     },
-                },
-                "tokenizer": {
-                    "tex_tokenizer": {
-                        "type": "pattern",
-                        # 英数字と '\' 以外で分割（'\iiint', 'integral' が単独トークンになる）
-                        "pattern": "[^A-Za-z0-9\\\\]+"
-                    }
-                },
-                "filter": {
-                    "command_edge": {
-                        "type": "edge_ngram",
-                        "min_gram": 1,
-                        "max_gram": 20,
-                    }
+                    "tex_ngram_analyzer": {
+                        "type": "custom",
+                        "tokenizer": "tex_tokenizer",
+                        "filter": ["tex_ngram"],
+                    },
                 },
             }
         },
@@ -220,9 +209,12 @@ def _index_definition() -> dict:
                     "analyzer": "tex_analyzer",
                     "search_analyzer": "tex_analyzer",
                     "term_vector": "with_positions_offsets",
-                    # "fields": {
-                    #     "raw": {"type": "wildcard"},
-                    # },
+                    "fields": {
+                        "ngram": {
+                            "type": "text",
+                            "analyzer": "tex_ngram_analyzer",
+                        }
+                    },
                 },
             }
         },
@@ -241,3 +233,10 @@ def _filters_match(request: SearchRequest, doc: IndexDocument) -> bool:
 
 def get_index_definition() -> dict:
     return _index_definition()
+
+
+def _snippet_lines() -> int:
+    try:
+        return settings.SEARCH_CONFIG["snippet_lines"]
+    except (ImproperlyConfigured, AttributeError, KeyError):  # pragma: no cover - fallback for tests
+        return 8

@@ -69,8 +69,29 @@ def parse_payload(payload: dict[str, Any]) -> SearchRequest:
 
 def validate_regex(pattern: str) -> None:
     try:
-        re.compile(pattern, flags=re.MULTILINE, timeout=REGEX_TIMEOUT_SECONDS)
+        compiled_pattern = _decode_query(pattern)
+        try:
+            re.compile(compiled_pattern, flags=re.MULTILINE, timeout=REGEX_TIMEOUT_SECONDS)
+        except TypeError:
+            re.compile(compiled_pattern, flags=re.MULTILINE)
     except TimeoutError as exc:  # pragma: no cover - requires catastrophic input
         raise QueryValidationError("Regex pattern timed out during validation") from exc
     except re.error as exc:
         raise QueryValidationError(f"Invalid regex: {exc}") from exc
+
+
+def _decode_query(query: str) -> str:
+    try:
+        import codecs
+
+        return codecs.decode(query, "unicode_escape")
+    except Exception:  # pragma: no cover - best effort fallback
+        return query
+
+
+def decode_literal_query(query: str) -> str:
+    return _decode_query(query)
+
+
+def decode_regex_query(pattern: str) -> str:
+    return _decode_query(pattern)
