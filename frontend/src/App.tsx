@@ -66,7 +66,7 @@ export default function App() {
   });
 
   const hits = data?.hits ?? [];
-  const total = data?.total ?? 0;
+  const total = hits.length;
 
   const handleCopy = async (hit: SearchHit) => {
     try {

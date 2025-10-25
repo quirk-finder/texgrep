@@ -150,6 +150,10 @@ def _process_hits(raw_hits: Sequence[dict], request: SearchRequest) -> List[Sear
 def _index_definition() -> dict:
     return {
         "settings": {
+            "index": {
+                # ngram/edge_ngram の (max_gram - min_gram) 許容差
+                "max_ngram_diff": 20
+            },
             "analysis": {
                 "tokenizer": {
                     "tex_tokenizer": {

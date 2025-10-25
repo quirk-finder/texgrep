@@ -38,7 +38,12 @@ def build_search_body(request: SearchRequest) -> dict:
 
 def _literal_clause(query: str) -> dict:
     literal = decode_literal_query(query)
-    return {"match_phrase": {"content": {"query": literal}}}
+    should = [
+        {"match_phrase": {"content": {"query": literal}}},            # 本文そのまま
+        {"term": {"commands": literal}},                              # 完全一致（例: "\iiint"）
+        {"match": {"commands.prefix": {"query": literal, "operator": "and"}}},  # 先頭一致
+    ]
+    return {"bool": {"should": should, "minimum_should_match": 1}}
 
 
 def _regex_clause(pattern: str) -> dict:
