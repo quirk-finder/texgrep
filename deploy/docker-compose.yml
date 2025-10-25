@@ -55,6 +55,10 @@ services:
       dockerfile: frontend/Dockerfile
     env_file:
       - ../.env
+    environment:
+      # chokidar を確実にポーリングさせる
+      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: "200"
     volumes:
       - ../frontend:/app/frontend
       - /app/frontend/node_modules
