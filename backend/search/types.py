@@ -3,6 +3,27 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, List, Literal, Optional
 
+
+SnippetTextKind = Literal["text"]
+SnippetMathKind = Literal["math"]
+
+
+@dataclass(slots=True)
+class TextSnippetBlock:
+    kind: SnippetTextKind = "text"
+    html: str = ""
+
+
+@dataclass(slots=True)
+class MathSnippetBlock:
+    kind: SnippetMathKind = "math"
+    tex: str = ""
+    display: bool = False
+    marked: bool = False
+
+
+SnippetBlock = TextSnippetBlock | MathSnippetBlock
+
 SearchMode = Literal["literal", "regex"]
 
 
@@ -20,8 +41,9 @@ class SearchHit:
     file_id: str
     path: str
     line: int
-    snippet: str
     url: str
+    snippet: Optional[str] = None
+    blocks: Optional[List[SnippetBlock]] = None
 
 
 @dataclass(slots=True)
