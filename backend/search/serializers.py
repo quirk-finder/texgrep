@@ -8,6 +8,24 @@ from .query import QueryValidationError, parse_payload
 from .types import SearchResponse
 
 
+class SnippetBlockSerializer(serializers.Serializer):
+    kind = serializers.ChoiceField(choices=["text", "math"])
+    html = serializers.CharField(required=False, allow_blank=True)
+    tex = serializers.CharField(required=False, allow_blank=True)
+    display = serializers.BooleanField(required=False)
+    marked = serializers.BooleanField(required=False)
+
+    def validate(self, attrs):  # type: ignore[override]
+        kind = attrs.get("kind")
+        if kind == "text":
+            if "html" not in attrs:
+                raise serializers.ValidationError("Text block must include html content")
+        elif kind == "math":
+            if "tex" not in attrs:
+                raise serializers.ValidationError("Math block must include tex content")
+        return attrs
+
+
 class SearchRequestSerializer(serializers.Serializer):
     q = serializers.CharField()
     mode = serializers.ChoiceField(choices=["literal", "regex"], default="literal")
@@ -27,8 +45,9 @@ class SearchHitSerializer(serializers.Serializer):
     file_id = serializers.CharField()
     path = serializers.CharField()
     line = serializers.IntegerField()
-    snippet = serializers.CharField()
+    snippet = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     url = serializers.CharField()
+    blocks = SnippetBlockSerializer(many=True, required=False)
 
 
 class SearchResponseSerializer(serializers.Serializer):

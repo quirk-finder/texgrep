@@ -1,6 +1,6 @@
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { SearchHit } from '../api';
+import { SearchHit, SnippetBlock } from '../api';
 
 interface ResultListProps {
   hits: SearchHit[];
@@ -9,29 +9,34 @@ interface ResultListProps {
   onCopy: (hit: SearchHit) => void;
 }
 
-function convertMarksInsideMath(html: string): string {
-  const wrap = (s: string) => s.replace(/<mark>([\s\S]*?)<\/mark>/g, (_m, g1) => `\\class{mjx-hl}{${g1}}`);
-  // display 数式（$$ ... $$）
-  html = html.replace(/\$\$([\s\S]*?)\$\$/g, (_m, g1) => `$$${wrap(g1)}$$`);
-  // display 数式（\[ ... \]）
-  html = html.replace(/\\\[([\s\S]*?)\\\]/g, (_m, g1) => `\\[${wrap(g1)}\\]`);
-  // inline 数式（$ ... $）
-  html = html.replace(/\$([\s\S]*?)\$/g, (_m, g1) => `$${wrap(g1)}$`);
-  return html;
-}
-
-function MathSnippet({ snippet }: { snippet: string }) {
-  const htmlForMathJax = useMemo(
-    () => convertMarksInsideMath(snippet),
-    [snippet]
-  );
-
+function MathBlock({ tex, display = false }: { tex: string; display?: boolean }) {
+  const html = display ? `\\[${tex}\\]` : `\\(${tex}\\)`;
   return (
     <div
-      className="w-full rounded-md bg-slate-950/60 p-3 text-sm leading-relaxed text-slate-100
-                 font-mono whitespace-pre-wrap break-words"
-      dangerouslySetInnerHTML={{ __html: htmlForMathJax }}
+      className="my-1 w-full"
+      dangerouslySetInnerHTML={{ __html: html }}
     />
+  );
+}
+
+function Blocks({ blocks, fallbackSnippet }: { blocks?: SnippetBlock[]; fallbackSnippet?: string }) {
+  if (!blocks || blocks.length === 0) {
+    return (
+      <pre className="w-full overflow-x-auto rounded-md bg-slate-950/60 p-3 text-sm leading-relaxed text-slate-100">
+        <code dangerouslySetInnerHTML={{ __html: fallbackSnippet ?? '' }} />
+      </pre>
+    );
+  }
+  return (
+    <div className="w-full rounded-md bg-slate-950/60 p-3 text-sm leading-relaxed text-slate-100">
+      {blocks.map((block, index) =>
+        block.kind === 'text' ? (
+          <span key={index} className="whitespace-pre-wrap break-words" dangerouslySetInnerHTML={{ __html: block.html }} />
+        ) : (
+          <MathBlock key={index} tex={block.tex} display={block.display} />
+        )
+      )}
+    </div>
   );
 }
 
@@ -56,7 +61,12 @@ export function ResultList({ hits, selectedIndex, onSelect, onCopy }: ResultList
 
   // 可視アイテムの“署名”（インデックス列）を作る
   const visibleItems = virtualizer.getVirtualItems();
-  const visibleSig = visibleItems.map(v => v.key ?? v.index).join(',');
+  const visibleSig = visibleItems
+    .map((v) => {
+      const hit = hits[v.index];
+      return `${v.key ?? v.index}:${hit?.blocks?.length ?? 0}:${hit?.snippet?.length ?? 0}`;
+    })
+    .join(',');
 
   // 可視範囲だけ MathJax を typeset → 終わったら高さを測り直す
   useEffect(() => {
@@ -136,7 +146,7 @@ export function ResultList({ hits, selectedIndex, onSelect, onCopy }: ResultList
                   </div>
                 </div>
 
-                <MathSnippet snippet={hit.snippet} />
+                <Blocks blocks={hit.blocks} fallbackSnippet={hit.snippet} />
               </div>
             </div>
           );

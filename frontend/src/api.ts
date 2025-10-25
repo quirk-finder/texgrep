@@ -15,12 +15,17 @@ export interface SearchRequest {
   size?: number;
 }
 
+export type SnippetBlock =
+  | { kind: 'text'; html: string }
+  | { kind: 'math'; tex: string; display?: boolean; marked?: boolean };
+
 export interface SearchHit {
   file_id: string;
   path: string;
   line: number;
-  snippet: string;
+  snippet?: string;
   url: string;
+  blocks?: SnippetBlock[];
 }
 
 export interface SearchResponse {
