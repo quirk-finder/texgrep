@@ -1,0 +1,42 @@
+\documentclass{article}
+\usepackage{amsmath,amssymb,mathtools}
+
+\newcommand{\vect}[1]{\mathbf{#1}}
+\newcommand{\norm}[1]{\lVert #1 \rVert}
+\DeclareMathOperator{\argmin}{argmin}
+\DeclareMathOperator{\argmax}{argmax}
+
+\begin{document}
+% Math showcase
+Inline: $f(x)=\frac{1}{\sqrt{2\pi}}\mathrm{e}^{-x^2/2}$, $\norm{\vect{v}}_2$, $\iiint_V g\,\mathrm{d}V$.
+
+Display:
+\[
+\nabla \cdot \vect{F}=\lim_{\varepsilon\to 0}\frac{1}{\varepsilon^3}
+\iiint_{[-\varepsilon/2,\varepsilon/2]^3} \operatorname{div}\vect{F}\,\mathrm{d}V.
+\]
+
+Aligned:
+\begin{align}
+S_n &= \sum_{i=1}^n i = \frac{n(n+1)}{2}, \\
+P_n &= \prod_{k=1}^n k = n!.
+\end{align}
+
+Sets: $\mathbb{R}, \mathbb{N}, \mathcal{O}(n)$, intervals $[a,b)$.
+
+Limits: $\limsup_{n\to\infty} a_n$, $\argmax_{x\in\mathbb{R}} f(x)$.
+
+% theorem 環境はレンダしないが検索用に置く
+\begin{theorem}
+If $f$ is continuous on $[a,b]$, then $\int_a^b f'(x)\,\mathrm{d}x=f(b)-f(a)$.
+\end{theorem}
+
+Labels/refs: See \eqref{eq:binom} and Eq.~\ref{eq:binom}.
+\begin{equation}\label{eq:binom}
+\binom{n}{k}=\frac{n!}{k!(n-k)!}.
+\end{equation}
+
+% Various commands to hit
+\newcommand{\R}{\mathbb{R}}
+\renewcommand{\vec}[1]{\underline{#1}}
+\end{document}

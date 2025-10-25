@@ -1,0 +1,39 @@
+\documentclass{article}
+\usepackage{amsmath,amssymb,mathtools,listings}
+
+\makeatletter
+\newcommand{\foo@bar}[1]{\texttt{#1}}
+\makeatother
+
+\begin{document}
+% Edge cases, regex-like content and code
+
+Inline math with delimiters: \( E = mc^2 \), and $$\int_0^{\infty} e^{-x}\,dx = 1$$.
+
+Backslash-heavy line:
+\texttt{\textbackslash newcommand\{\textbackslash R\}\{\textbackslash mathbb\{R\}\}}
+
+Verbatim-ish listing:
+\begin{lstlisting}
+// a fake regex show-case (for search tests):
+pattern = "\\\\[A-Za-z]+\\s*\\{[^}]*\\}";
+text = "use \\newcommand{\\R}{\\mathbb{R}} and \\begin{equation} ...";
+\end{lstlisting}
+
+Brackets/punct in text: [A-Za-z]+ {curly} (round) [square] .* + ? ^ \$ \backslash
+
+Multiple commands: \iint_D f\,\mathrm{d}x\,\mathrm{d}y and \oint_C \vec{F}\cdot d\vec{s}
+
+Displayed cases:
+\[
+f(x) = \begin{cases}
+  0 & x<0,\\
+  1 & x\ge 0~.
+\end{cases}
+\]
+
+Indexing targets:
+\DeclareMathOperator{\sgn}{sgn},
+\renewcommand{\epsilon}{\varepsilon},
+\mathbf{A}, \mathcal{F}
+\end{document}

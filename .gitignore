@@ -13,3 +13,9 @@ backend/staticfiles/
 .DS_Store
 .venv/
 .ssh/
+
+# --- Frontend (Vite/React/Tailwind) ---
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.eslintcache

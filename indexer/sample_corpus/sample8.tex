@@ -1,0 +1,900 @@
+\documentclass[a4paper,10pt]{jsarticle}
+
+\input{jartfmt}
+%\usepackage[dviout]{graphics,graphicx}
+\usepackage[dvipdfm]{graphics,graphicx}
+\usepackage{dirtree}
+\usepackage{colortbl,multirow}
+\usepackage[superscript]{cite}%引用を上付にする
+\usepackage{overcite}%引用を上付にする
+
+\begin{document}
+\renewcommand\citeform[1]{#1)}%引用を上付*)にする
+
+\begin{titlepage}
+\rightline{\today}
+\centerline{\Large\bfseries スタイルファイル等使用例}
+\tableofcontents
+\end{titlepage}
+\clearpage
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+
+
+\section{節(section)}
+\subsection{小節(subsection)}
+\subsubsection{小小節(subsubsection)}
+\paragraph{段落(paragraph)}
+文書クラスは jsarticle です．jsarticleではパラグラフの先頭には$\blacksquare$が標準でつきます．
+パラグラフおよびサブパラグラフでは空白の後に本文が続きます．
+setcounter\{secnumdepth\}\{3\}を指定しているので番号が付くのはsubsubsectionまでです．
+graphics,graphicxのオプションはdvipdfmです．
+
+\subparagraph{小段落(subparagraph)}
+サブパラグラフの表示．
+この文書ではjartfmtというファイルをインクルードすることにより以下のパッケージを読み込んでいます．
+amsmath, amssymb, pifont, bm, epic, eepic, eepicsup, float, color, fancybox, ascmac
+更に本文でパッケージgraphics, graphicx, dirtree,colortbl,multirowを読み込んでいます．
+\[ \int_I^{e^d}dx \]
+
+
+\subsection{箇条書き}
+\subsubsection{enumerate環境}
+\begin{enumerate}
+\item レベル1
+  \begin{enumerate}
+  \item レベル2
+    \begin{enumerate}
+    \item レベル3
+      \begin{enumerate}
+      \item レベル4(入れ子のレベルは4まで)
+      \end{enumerate}
+    \end{enumerate}
+  \end{enumerate}
+\item レベル1の第2項目
+\end{enumerate}
+
+
+\subsubsection{itemize環境}
+\begin{itemize}
+\item レベル1
+  \begin{itemize}
+  \item レベル2
+    \begin{itemize}
+    \item レベル3
+      \begin{itemize}
+      \item レベル4
+      \end{itemize}
+    \end{itemize}
+  \end{itemize}
+\item レベル1の第2項目
+\end{itemize}
+
+
+\subsubsection{description環境}
+\begin{description}
+\item[その1]土木学会
+\item[その2]地盤工学会
+\item[その3]水門鉄管協会
+\end{description}
+
+
+\subsubsection{dinglist環境}
+pifontを用いた箇条書きの事例
+
+\begin{dinglist}{226}
+\item 取水口
+\item 導水路
+\item 水圧管路：水圧管路は延長1400mの斜坑で構成される．斜坑部はTBMにより掘削し，水圧鉄管を設置，充填コンクリートで周辺岩盤に固定する．
+\end{dinglist}
+
+\begin{dinglist}{51}
+\item 放水庭
+\item 放水路
+\item 放水口
+\end{dinglist}
+
+
+
+
+\section{pifont表}
+\begin{center}
+\Large
+\begin{tabular}{c|cccccccccc}
+   & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9\\ \hline
+10 & \ding{10} & \ding{11} & \ding{12} & \ding{13} & \ding{14} & \ding{15} & \ding{16} & \ding{17} & \ding{18} & \ding{19}\\
+20 & \ding{20} & \ding{21} & \ding{22} & \ding{23} & \ding{24} & \ding{25} & \ding{26} & \ding{27} & \ding{28} & \ding{29}\\
+30 & \ding{30} & \ding{31} & \ding{32} & \ding{33} & \ding{34} & \ding{35} & \ding{36} & \ding{37} & \ding{38} & \ding{39}\\
+40 & \ding{40} & \ding{41} & \ding{42} & \ding{43} & \ding{44} & \ding{45} & \ding{46} & \ding{47} & \ding{48} & \ding{49}\\
+50 & \ding{50} & \ding{51} & \ding{52} & \ding{53} & \ding{54} & \ding{55} & \ding{56} & \ding{57} & \ding{58} & \ding{59}\\
+60 & \ding{60} & \ding{61} & \ding{62} & \ding{63} & \ding{64} & \ding{65} & \ding{66} & \ding{67} & \ding{68} & \ding{69}\\
+70 & \ding{70} & \ding{71} & \ding{72} & \ding{73} & \ding{74} & \ding{75} & \ding{76} & \ding{77} & \ding{78} & \ding{79}\\
+80 & \ding{80} & \ding{81} & \ding{82} & \ding{83} & \ding{84} & \ding{85} & \ding{86} & \ding{87} & \ding{88} & \ding{89}\\
+90 & \ding{90} & \ding{91} & \ding{92} & \ding{93} & \ding{94} & \ding{95} & \ding{96} & \ding{97} & \ding{98} & \ding{99}\\
+100 & \ding{100} & \ding{101} & \ding{102} & \ding{103} & \ding{104} & \ding{105} & \ding{106} & \ding{107} & \ding{108} & \ding{109}\\
+110 & \ding{110} & \ding{111} & \ding{112} & \ding{113} & \ding{114} & \ding{115} & \ding{116} & \ding{117} & \ding{118} & \ding{119}\\
+120 & \ding{120} & \ding{121} & \ding{122} & \ding{123} & \ding{124} & \ding{125} & \ding{126} & \ding{127} & \ding{128} & \ding{129}\\
+130 & \ding{130} & \ding{131} & \ding{132} & \ding{133} & \ding{134} & \ding{135} & \ding{136} & \ding{137} & \ding{138} & \ding{139}\\
+140 & \ding{140} & \ding{141} & \ding{142} & \ding{143} & \ding{144} & \ding{145} & \ding{146} & \ding{147} & \ding{148} & \ding{149}\\
+150 & \ding{150} & \ding{151} & \ding{152} & \ding{153} & \ding{154} & \ding{155} & \ding{156} & \ding{157} & \ding{158} & \ding{159}\\
+160 & \ding{160} & \ding{161} & \ding{162} & \ding{163} & \ding{164} & \ding{165} & \ding{166} & \ding{167} & \ding{168} & \ding{169}\\
+170 & \ding{170} & \ding{171} & \ding{172} & \ding{173} & \ding{174} & \ding{175} & \ding{176} & \ding{177} & \ding{178} & \ding{179}\\
+180 & \ding{180} & \ding{181} & \ding{182} & \ding{183} & \ding{184} & \ding{185} & \ding{186} & \ding{187} & \ding{188} & \ding{189}\\
+190 & \ding{190} & \ding{191} & \ding{192} & \ding{193} & \ding{194} & \ding{195} & \ding{196} & \ding{197} & \ding{198} & \ding{199}\\
+200 & \ding{200} & \ding{201} & \ding{202} & \ding{203} & \ding{204} & \ding{205} & \ding{206} & \ding{207} & \ding{208} & \ding{209}\\
+210 & \ding{210} & \ding{211} & \ding{212} & \ding{213} & \ding{214} & \ding{215} & \ding{216} & \ding{217} & \ding{218} & \ding{219}\\
+220 & \ding{220} & \ding{221} & \ding{222} & \ding{223} & \ding{224} & \ding{225} & \ding{226} & \ding{227} & \ding{228} & \ding{229}\\
+230 & \ding{230} & \ding{231} & \ding{232} & \ding{233} & \ding{234} & \ding{235} & \ding{236} & \ding{237} & \ding{238} & \ding{239}\\
+240 & \ding{240} & \ding{241} & \ding{242} & \ding{243} & \ding{244} & \ding{245} & \ding{246} & \ding{247} & \ding{248} & \ding{249}\\
+250 & \ding{250} & \ding{251} & \ding{252} & \ding{253} & \ding{254} &  &  &  &  & \\ \hline
+   & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9\\
+\end{tabular}
+\end{center}
+\pagebreak
+
+
+
+
+
+\section{作図事例}
+\begin{center}
+\unitlength=1.0mm
+\small
+\begin{tabular}{|c|c|}\hline
+\begin{picture}(55,45)(-25,-25)
+\thicklines
+\put(5,0){\arc{25.85786}{0}{0.7854}}
+\put(0,5){\arc{40}{0.7854}{2.3562}}
+\put(-5,0){\arc{25.85786}{2.3562}{3.9270}}
+\put(0,-5){\arc{40}{3.9270}{5.4978}}
+\put(5,0){\arc{25.85786}{5.4978}{6.2831853}}
+\thinlines
+\put(0,-5){\line(-1,1){14.14213}}
+\put(0,-5){\line(1,1){14.14213}}
+\put(-5,0){\line(-1,-1){9.14213}}
+\put(5,0){\line(1,-1){9.14213}}
+\put(0,-5){\arc{5}{3.9270}{5.4978}}\put(0,-1){\makebox(0,0){$90^\circ$}}
+\put(-5,0){\arc{5}{2.3562}{3.9270}}\put(-10,0){\makebox(0,0){$90^\circ$}}
+\put(-6,4){\makebox(0,0){\rotatebox{-45}{$r+\Delta r$}}}
+\put(-8,-6){\makebox(0,0){\rotatebox{45}{$r-\Delta r$}}}
+\multiput(-17.92893,0)(35.85786,0){2}{\line(0,-1){20}}
+\put(-17.92893,-18){\vector(1,0){35.85786}}\put(-17.92893,-18){\vector(-1,0){0}}
+\put(0,-20){\makebox(0,0){$D+\Delta D$}}
+\multiput(0,-15)(0,30){2}{\line(1,0){25}}
+\put(23,-15){\vector(0,1){30}}\put(23,-15){\vector(0,-1){0}}
+\put(25,0){\makebox(0,0){\rotatebox{90}{$D-\Delta D$}}}
+\end{picture}
+&
+\begin{picture}(60,30)(-30,-20)
+\thicklines
+\multiput(0,10)(0,-15){2}{\line(-1,0){25}}\put(0,10){\line(0,-1){15}}
+\multiput(0,5)(0,-15){2}{\line(1,0){25}}\put(0,-10){\line(0,1){5}}
+\multiput(-5,-5)(0,2.5){7}{\vector(1,0){5}}\put(-5,-5){\line(0,1){15}}
+\multiput(5,-10)(0,2.5){7}{\vector(-1,0){5}}\put(5,-10){\line(0,1){15}}
+\thinlines
+\put(-20,-5){\vector(0,1){15}}\put(-20,-5){\vector(0,-1){0}}\put(-22,2.5){\makebox(0,0){$t$}}
+\put(20,-10){\vector(0,1){15}}\put(20,-10){\vector(0,-1){0}}\put(22,-2.5){\makebox(0,0){$t$}}
+\put(-8,2.5){\makebox(0,0){\rotatebox{-90}{$\sigma_N\cdot F$}}}
+\put(8,-2.5){\makebox(0,0){\rotatebox{90}{$\sigma_N\cdot F$}}}
+\put(0,10){\line(1,0){5}}
+\put(3,5){\vector(0,1){5}}\put(3,5){\vector(0,-1){0}}\put(5,7.5){\makebox(0,0){$s$}}
+\end{picture}
+\\
+\normalsize \textgt{4円弧複合断面}
+&
+\normalsize \textgt{段違いの考慮}
+\\
+\hline
+\end{tabular}
+\end{center}
+
+
+
+
+
+\section{図形の保存・呼び出しの使用事例}
+\verb|\savebox|,\verb|\sbox|,\verb|\usebox|の利用\\
+\MARU{1}ばねを図形保存し利用
+\unitlength=1mm
+\newsavebox{\bane}
+\sbox{\bane}{
+\begin{picture}(4,6)(-2,0)
+\thicklines
+\path(0,0)(0,1)(-1,1.5)(1,2.5)(-1,3.5)(1,4.5)(0,5)(0,6)
+\path(-2,6)(2,6)
+\end{picture}
+}
+\begin{center}
+\begin{picture}(60,60)(-30,-30)
+\thicklines
+\put(0,0){\arc{46}{3.14159}{6.28318}}
+\put( 26.000, 0.000){\makebox(0,0){\rotatebox{-90}{\usebox{\bane}}}}
+\put( 25.114, 6.729){\makebox(0,0){\rotatebox{-75}{\usebox{\bane}}}}
+\put( 22.517,13.000){\makebox(0,0){\rotatebox{-60}{\usebox{\bane}}}}
+\put( 18.385,18.385){\makebox(0,0){\rotatebox{-45}{\usebox{\bane}}}}
+\put( 13.000,22.517){\makebox(0,0){\rotatebox{-30}{\usebox{\bane}}}}
+\put(  6.729,25.114){\makebox(0,0){\rotatebox{-15}{\usebox{\bane}}}}
+\put(  0.000,26.000){\makebox(0,0){\rotatebox{0}{\usebox{\bane}}}}
+\put( -6.729,25.114){\makebox(0,0){\rotatebox{15}{\usebox{\bane}}}}
+\put(-13.000,22.517){\makebox(0,0){\rotatebox{30}{\usebox{\bane}}}}
+\put(-18.385,18.385){\makebox(0,0){\rotatebox{45}{\usebox{\bane}}}}
+\put(-22.517,13.000){\makebox(0,0){\rotatebox{60}{\usebox{\bane}}}}
+\put(-25.114, 6.729){\makebox(0,0){\rotatebox{75}{\usebox{\bane}}}}
+\put(-26.000, 0.000){\makebox(0,0){\rotatebox{90}{\usebox{\bane}}}}
+\large
+\put(23,0){\makebox(0,0){$\bullet$}}
+\put(0,23){\makebox(0,0){$\bullet$}}
+\put(-23,0){\makebox(0,0){$\bullet$}}
+\footnotesize
+\put(0,20){\makebox(0,0){水平固定}}
+\put(-16,0){\makebox(0,0){鉛直固定}}
+\put(16,0){\makebox(0,0){鉛直固定}}
+\end{picture}
+
+\end{center}
+
+
+\vspace{-6zh}
+\MARU{2}ひび割れと岩盤を図形保存し利用
+\unitlength=0.8mm
+\newsavebox{\hibi}
+\sbox{\hibi}{
+\begin{picture}(10,2)
+\thicklines
+\path(0,0)(1,1)(3,-1)(5,1)(7,-1)(9,1)(10,0)
+\end{picture}
+}
+\newsavebox{\gan}
+\sbox{\gan}{
+\begin{picture}(25,35)(-12.5,-17.5)
+\thicklines
+\put(-10.261,28.191){\line(1,1){3}}
+\put(-7.765 ,28.978){\line(1,1){3}}
+\put(-5.209 ,29.544){\line(1,1){3}}
+\put(-2.615 ,29.886){\line(1,1){3}}
+\put( 0.000 ,30.000){\line(1,1){3}}
+\put( 2.615 ,29.886){\line(1,1){3}}
+\put( 5.209 ,29.544){\line(1,1){3}}
+\put( 7.765 ,28.978){\line(1,1){3}}
+\put( 10.261,28.191){\line(1,1){3}}
+\put(-10.261,28.191){\line(-1,1){3}}
+\put(-7.765 ,28.978){\line(-1,1){3}}
+\put(-5.209 ,29.544){\line(-1,1){3}}
+\put(-2.615 ,29.886){\line(-1,1){3}}
+\put( 0.000 ,30.000){\line(-1,1){3}}
+\put( 2.615 ,29.886){\line(-1,1){3}}
+\put( 5.209 ,29.544){\line(-1,1){3}}
+\put( 7.765 ,28.978){\line(-1,1){3}}
+\put( 10.261,28.191){\line(-1,1){3}}
+\end{picture}
+}
+\begin{center}
+\begin{picture}(80,80)(-40,-40)
+\thicklines
+\put(  0.000, 0.000){\makebox(0,0){\rotatebox{0}{\usebox{\gan}}}}
+\put(  0.000, 0.000){\makebox(0,0){\rotatebox{90}{\usebox{\gan}}}}
+\put(  0.000, 0.000){\makebox(0,0){\rotatebox{180}{\usebox{\gan}}}}
+\put(  0.000, 0.000){\makebox(0,0){\rotatebox{270}{\usebox{\gan}}}}
+\put(0,0){\circle{60}}
+\put(0,0){\circle{40}}
+\put(0,0){\circle{38}}
+\put( 25.000,  0.000){\makebox(0,0){\rotatebox{0}{\usebox{\hibi}}}}
+\put( 12.500, 21.651){\makebox(0,0){\rotatebox{60}{\usebox{\hibi}}}}
+\put(-12.500, 21.651){\makebox(0,0){\rotatebox{120}{\usebox{\hibi}}}}
+\put(-25.000,  0.000){\makebox(0,0){\rotatebox{0}{\usebox{\hibi}}}}
+\put(-12.500,-21.651){\makebox(0,0){\rotatebox{60}{\usebox{\hibi}}}}
+\put( 12.500,-21.651){\makebox(0,0){\rotatebox{120}{\usebox{\hibi}}}}
+\footnotesize
+\put(0,24){\makebox(0,0){コンクリート}}
+\put(0,16){\makebox(0,0){鉄管}}
+\put(0,35){\makebox(0,0){岩盤}}
+\put(24,6){\makebox(0,0){ひび}}
+\put(24,2.5){\makebox(0,0){割れ}}
+\thinlines
+\put(0,0){\vector(1,-1){21.213}}
+\put(0,0){\vector(1,1){13.435}}
+\put(16.142,16.142){\vector(-1,-1){2}}
+\put(17.142,17.142){\makebox(0,0){\rotatebox{45}{$t$}}}
+\put(7,9){\makebox(0,0){\rotatebox{45}{$r_s$}}}
+\put(10,-8){\makebox(0,0){\rotatebox{-45}{$r_c$}}}
+\put(-14.142,-14.142){\line(-1,-1){12}}\put(-14.142,-14.142){\vector(1,1){0}}
+\put(-43,-30){低水圧時は鉄管}
+\put(-43,-33.5){背面間隙を考慮}
+\end{picture}
+\end{center}
+
+\begin{center}
+\small
+\begin{tabular}{c|p{120mm}}
+\multicolumn{2}{c}{tabular環境で2列目を段落モードp\{120mm\}とした事例}\\ \hline
+構造要素等      & \multicolumn{1}{c}{モデル化の考え方}\\ \hline\hline
+水圧鉄管        & 円周方向応力のみを負担する弾性体．\\ \hline
+充填コンクリート& ひび割れ発生を考慮し，半径方向圧縮力のみを伝える弾性体とする．ただし鉄管背面間隙量評価のため塑性変形係数を導入．\\ \hline
+岩盤            & 十分な初期地圧の存在を前提に，円周方向・半径方向の引張・圧縮応力を伝える無限弾性体とする．ただしコンクリートと同様に鉄管背面間隙量評価のため塑性変形係数を導入．なお実務設計では，掘削面周辺は緩みを考慮し，弾性係数の低下および引張応力を伝達しないとする場合もある．\\ \hline
+鉄管背面間隙    & コンクリート・岩盤の塑性変形，鉄管の温度降下，コンクリートの硬化収縮により低水圧時に発生する間隙を考慮．\\ \hline
+基礎方程式      & 内水圧による鉄管の半径方向変位量が，鉄管背面間隙量およびコンクリートおよび岩盤の圧縮変位量の和に等しいとして設計式を導出．\\ \hline
+\end{tabular}
+\end{center}
+
+
+
+
+
+\section{eepicsup.styの利用}
+\begin{center}
+\unitlength=0.7mm
+\begin{picture}(100,100)
+\shade[0.5]\put(70,70){\circle{50}}
+\shade[0.4]\put(40,40){\ellipse{50}{25}}
+\shade[0.6]\path(10,10)(30,30)(40,10)(10,10)
+\end{picture}
+\end{center}
+
+\unitlength=1mm
+\begin{picture}(50,10)
+\dashline{1}(5,0)(45,0)
+\dashline{2}(5,1)(45,1)
+\dashline{3}(5,2)(45,2)
+\dashline{4}(5,3)(45,3)
+\dashline{5}(5,4)(45,4)
+\end{picture}
+
+
+
+
+
+\section{dirtree.sty使用事例}
+\dirtree{%
+   .1 \fbox{揚水発電所} \DTcomment{昼間発電・夜間揚水により水の位置エネルギーを保存}.
+   .2 上部ダム・調整池 \DTcomment{掘り込み式AFRD}.
+   .2 水路系.
+   .3 取水口 \DTcomment{朝顔型}.
+   .3 導水路.
+   .3 導水路調圧水槽 \DTcomment{水室式制水口型}.
+   .3 水圧鉄管路 \DTcomment{全溶接鋼管トンネル内コンクリート埋設式}.
+   .3 地下発電所.
+   .3 放水庭.
+   .3 放水路調圧水槽.
+   .3 放水路.
+   .3 放水口 \DTcomment{側方型}.
+   .2 下部ダム・調整池 \DTcomment{CGD}.
+}
+
+
+
+
+
+\pagebreak
+\section{数式表示事例}
+\subsection{行列表示}
+\begin{tabular}{cccccc}
+matrix & pmatrix & bmatrix & Bmatrix & vmatrix & Vmatrix \\
+$\begin{matrix}a & b \\ c & d \end{matrix}$
+&
+$\begin{pmatrix}a & b \\ c & d \end{pmatrix}$
+&
+$\begin{bmatrix}a & b \\ c & d \end{bmatrix}$
+&
+$\begin{Bmatrix}a & b \\ c & d \end{Bmatrix}$
+&
+$\begin{vmatrix}a & b \\ c & d \end{vmatrix}$
+&
+$\begin{Vmatrix}a & b \\ c & d \end{Vmatrix}$
+\\
+\end{tabular}
+
+
+
+\subsection{公式}
+\subsubsection{ガウスの発散定理}
+\begin{equation}
+\iiint_V\left(\frac{\partial P}{\partial x}+\frac{\partial Q}{\partial y}+\frac{\partial R}{\partial z}\right)dx dy dz
+=\iint_S(P dy dz+Q dz dx+R dx dy)
+\end{equation}
+
+
+\subsubsection{フーリエ級数}
+任意の周期$2\ell$を持つ関数$f(x)$のフーリエ級数
+\begin{align}
+f(x)=&\frac{a_0}{2}+\sum_{n=1}^{+\infty}\left(a_n\cos\frac{n\pi x}{\ell}+b_n\sin\frac{n\pi x}{\ell}\right) \\
+&a_0=\frac{1}{\ell}\int_{-\ell}^{\ell}f(x) dx \\
+&a_n=\frac{1}{\ell}\int_{-\ell}^{\ell}f(x)\cos\frac{n\pi x}{\ell}dx \qquad (n=1,2,3, \cdots) \\
+&b_n=\frac{1}{\ell}\int_{-\ell}^{\ell}f(x)\sin\frac{n\pi x}{\ell}dx \qquad (n=1,2,3, \cdots)
+\end{align}
+
+
+\subsubsection{マクローリン展開}
+\begin{equation}
+f(x)=f(0)+\frac{f'(0)}{1!}x+\frac{f''(0)}{2!}x^2+\cdots+\frac{f^{(n-1)}}{(n-1)!}x^{n-1}+\frac{f^{(n)}(\theta x)}{n!}x^n \qquad (0<\theta<1)
+\end{equation}
+
+マクローリン展開適用例
+\begin{align}
+&e^x=1+\frac{x}{1!}+\cdots+\frac{x^{n-1}}{(n-1)!}+\frac{e^{\theta x}}{n!}x^n \qquad (0<\theta<1) \\
+&e\doteqdot 1+\frac{1}{1!}+\frac{1}{2!}+\cdots+\frac{1}{(n-1)!}
+\end{align}
+
+
+\subsubsection{極限表示（$e$の定義）}
+\begin{equation}
+\lim_{n\to\pm\infty}\left(1+\frac{1}{x}\right)^x=e
+\end{equation}
+
+
+\subsubsection{微分}
+\begin{align}
+&h(x)=f(x)\pm g(x)      & \to \qquad & h'(x)=f'(x)\pm g'(x) \\
+&h(x)=f(x)\cdot g(x)    & \to \qquad & h'(x)=f'(x)\cdot g(x)+f(x)\cdot g'(x) \\
+&h(x)=\frac{f(x)}{g(x)} & \to \qquad & h'(x)=\frac{f'(x)\cdot g(x)-f(x)\cdot g'(x)}{g(x)^2}
+\end{align}
+
+
+\subsubsection{ド・モアブルの公式}
+\begin{equation}
+(\cos\phi+i\cdot\sin\phi)^n=\cos(n\phi)+i\cdot\sin(n\phi)
+\end{equation}
+
+
+\subsubsection{オイラーの公式}
+\begin{equation}
+e^{i z}=\cos z+i\cdot\sin z
+\end{equation}
+
+
+\subsubsection{双曲線関数}
+\begin{equation}
+\cosh z=\frac{e^z+e^{-z}}{2} \qquad \sinh z=\frac{e^z-e^{-z}}{2}
+\end{equation}
+
+
+\subsubsection{三角関数の加法定理}
+\begin{align}
+\sin(\alpha+\beta)=&\sin\alpha\cdot\cos\beta+\cos\alpha\cdot\sin\beta \\
+\cos(\alpha+\beta)=&\cos\alpha\cdot\cos\beta-\sin\alpha\cdot\sin\beta
+\end{align}
+
+
+
+\subsection{統計処理関係}
+\subsubsection{2点$(x_1,y_1)$-$(x_2,y_2)$を結ぶ直線}
+\begin{equation}
+y=a\cdot x+b
+\end{equation}
+
+\begin{equation}
+a=\frac{y_2-y_1}{x_2-x_1}
+ \qquad \qquad
+b=\frac{x_2\cdot y_1-x_1\cdot y_2}{x_2-x_1}
+\end{equation}
+
+
+\subsubsection{回帰直線(データ数：$n$)}
+\begin{equation}
+y=a\cdot x+b
+\end{equation}
+
+\begin{equation}
+a=\frac{n \sum xy-\sum x\cdot\sum y}{n \sum x^2-(\sum x)^2}
+ \qquad \qquad
+b=\frac{\sum x^2\cdot \sum y-\sum x\cdot\sum xy}{n \sum x^2-(\sum x)^2}
+\end{equation}
+
+\begin{equation}
+r=\frac{n \sum xy-\sum x\cdot\sum y}{\sqrt{[n \sum x^2-(\sum x)^2]\cdot [n \sum y^2-(\sum y)^2]}}
+\end{equation}
+
+
+\subsubsection{基本統計量}
+\begin{align}
+x_m=\frac{\sum x}{n} \qquad \sigma_x=\sqrt{\frac{1}{n-1}\cdot\sum(x_i-x_m)^2}
+\end{align}
+
+
+\subsubsection{2次元正規分布}
+\paragraph{確率密度関数}\mbox{}\\
+\begin{equation}
+\begin{cases}
+\quad f(x,y)=\cfrac{1}{2\pi\cdot\sigma_x\cdot\sigma_y\cdot\sqrt{1-\rho^2}}\cdot\exp\left(-\cfrac{c^2}{2}\right) \\
+\quad \\
+\quad c^2=\cfrac{1}{1-\rho^2}\left\{\cfrac{(x-x_m)^2}{\sigma_x{}^2}+\cfrac{(y-y_m)^2}{\sigma_y{}^2}-\cfrac{2\rho(x-x_m)(y-y_m)}{\sigma_x\sigma_y}\right\}
+\end{cases}
+\end{equation}
+\begin{center}
+\begin{tabular}{ccccc}
+$x_m$,~$y_m$：平均値 &~& $\sigma_x$,~$\sigma_y$：標準偏差 &~& $\rho$：相関係数 \\
+\end{tabular}
+\end{center}
+
+
+\paragraph{相関楕円作図}\mbox{}\\
+\begin{equation}
+\begin{cases}
+\quad x=x_m+\sigma_x\cdot r \cdot\cos\theta & \\
+\quad y=y_m+\sigma_y\cdot r \cdot\sin\theta & \\
+\quad \\
+\quad r=\sqrt{\cfrac{-2(1-\rho^2)\cdot\ln(1-p)}{1-2\rho\cdot\sin\theta\cdot\cos\theta}} & \\
+\quad \\
+\quad p=1-\exp\left(-\cfrac{c^2}{2}\right)  & \text{：等確率楕円内の点の確率} \\
+\quad 0\leqq\theta\leqq 2\pi               & \text{：$\theta$の範囲}         \\
+\end{cases}
+\end{equation}
+
+
+
+
+
+\section{C++Builder で大きな配列をとる方法}
+\begin{screen}
+\centerline{プロジェクト$\rightarrow$オプション$\rightarrow$リンカタブ：予約スタックサイズ=0x01000000}
+\end{screen}
+
+
+\section{画面を画像として取得する方法}
+\begin{screen}
+\centerline{Alt＋PrtScによりクリップボードコピーし，貼り付ける}
+\end{screen}
+
+
+
+\section{定理環境}
+\newtheorem{teiri}{定理}
+\begin{teiri}
+雪が積もると猫はこたつで丸くなる
+\end{teiri}
+\begin{teiri}
+雪が積もると犬は喜ぶ
+\end{teiri}
+
+\newtheorem{kadai}{課題}[section]
+\begin{kadai}
+課題番号にsection番号を入れる場合はどうするのかな？
+\end{kadai}
+\begin{kadai}
+sectionの定義に「.」をいれているから「..」になるのかな？
+\end{kadai}
+
+\newtheorem{teiri1}{法則}
+\begin{teiri1}[猫の法則]
+雪が積もると猫はこたつで丸くなる
+\end{teiri1}
+\begin{teiri1}[犬の法則]
+雪が積もると犬は喜び庭を駆け回る
+\end{teiri1}
+
+\newtheorem{MONDAI}{問題}
+\renewcommand{\theMONDAI}{\alph{MONDAI}}
+\begin{MONDAI}
+カウンタの表示を変えるにはどうするか？
+\end{MONDAI}
+\begin{MONDAI}
+カウンタの表示をアルファベットにするにはどうするか？
+\end{MONDAI}
+\begin{MONDAI}
+カウンタ表示の種類は？
+\begin{center}
+\begin{tabular}{lll}\hline
+arabic & アラビア数字            & 1,2,3,$\cdots$    \\
+roman  & ローマ数字（小文字）    & i,ii,iii,$\cdots$ \\
+Roman  & ローマ数字（大文字）    & I,II,III,$\cdots$ \\
+alph   & アルファベット（小文字）& a,b,c,$\cdots$    \\
+Alph   & アルファベット（大文字）& A,B,C,$\cdots$    \\ \hline
+\end{tabular}
+\end{center}
+\end{MONDAI}
+
+
+\pagebreak
+\section{ascmac.sty使用事例}
+\verb|\usepackage{ascmac}|により，screen~環境，itembox~環境，shadebox~環境，boxnote~環境，網掛け命令が使えます．
+\begin{center}
+\begin{screen}
+{\bfseries\large screen 環境}\\
+角の丸い枠の中に文字列が出力されます．まわりの線の太さは \verb+\thinlines+ で与えられる 0.4pt です。
+\end{screen}
+\end{center}
+
+\begin{itembox}{\Large {itembox}}
+{\bfseries\large itembox 環境}\\
+screen 環境において枠の上部中央にタイトルを付けた形式で出力されます。 まわりの線の太さは \verb+thicklines+ で与えられる 0.8pt です．
+\end{itembox}
+
+\begin{itembox}[l]{\bfseries タイトルの左側表示}
+itembox環境でタイトルを左側表示した事例
+\end{itembox}
+
+\begin{itembox}[r]{\bfseries タイトルの右側表示}
+itembox環境でタイトルを右側表示した事例
+\end{itembox}
+
+\vspace{1zh}
+\setlength{\shaderule}{4pt}
+\begin{shadebox}
+{\bfseries\large shadebox 環境}\\
+影の付いた長方形の中に文字列が出力されます．影の幅は，\verb+\setlength{\shaderule}{x pt}+ で調節します．指定がない場合は 5pt が標準となります．
+\end{shadebox}
+
+\begin{boxnote}
+{\bfseries\large boxnote 環境}\\
+メモ用紙を破いたような感じの枠の中に文字列が出力されます．下はboxnote環境の中でshadebox環境を使用した事例．
+\vspace{1zh}
+
+\begin{shadebox}
+boxnote環境内でshadebox環境を使った場合はこんな風になります．
+\begin{flushright}釣り好き４様\end{flushright}
+\end{shadebox}
+
+\end{boxnote}
+
+\begin{center}
+\Maskbox{14cm}{1.0cm}{A}{c}{0.4pt}
+{日本円記号 \yen （\yen yen）はamssymb.sty（amsfonts.sty）およびascmac.styで定義されています}
+\end{center}
+
+\fbox{\begin{minipage}{10cm}
+fbox内にminipage環境で10cm幅を指定して文書を書いた例です．
+四角い枠の中に文が配置されます．
+\begin{flushright}釣り好き４様\end{flushright}
+\end{minipage}}
+\pagebreak
+
+
+
+
+
+\section{jpegおよびPNG画像取り込み事例}
+tabular~環境で，写真(jpg画像)を幅7cmにして2枚配置した例です．
+
+jpeg画像を張り込むにはsusieプラグインとebb.exeによりbbファイルを作成しておくことが必須です．
+
+なお，graphics,graphicxのオプションを，dviファイルで出力したい場合は[dviout]，
+pdfファイルで出力したい場合はとした場合は[dvipdfm]としないと正常に表示されないことに注意．
+
+\begin{center}
+\begin{tabular}{cc}
+\includegraphics[width=7cm]{pictateyama.jpg}
+&
+\includegraphics[width=7cm]{pickurobe.jpg}
+\\
+黒部右岸より望む立山&黒部ダム\\
+\end{tabular}
+\end{center}
+
+bbファイルを用いない場合の画像張り付けは，\\
+\centerline{\yen includegraphics[bb=\{0 0 1000 600\},width=15cm]\{picgrtest0.png\}}\\
+のようにします．BoundingBoxにいれるべき数値は，Windowsでは，画像ファイルの「右クリック-プロパティ-概要」で確認できます．
+下のグラフは上記方法により張り付けたPNG画像です．PNGはsusie plug-inによりdvioutでも表示できます．
+ただし[dviout]と[dvipdfm]は使い分けること．
+
+\includegraphics[bb={0 0 1000 600},width=15cm]{picgrtest0.png}%bbファイルを用いない場合
+
+各種デバイスドライバの画像形式対応状況は下表の通り．
+（出典：渡辺徹：好き好き LaTeX2e 初級編，第1.13版，2006.8.18）
+
+\begin{center}
+\begin{tabular}{cl}\hline
+dvips   & EPS \\
+dvipdfm & EPS*，EPDF，PNG，BMP，JPEG \\
+dviout  & EPS*，Susie plug-inにより他の形式にも対応可能 \\ \hline
+\multicolumn{2}{l}{*印はGhostscriptが必要}\\
+\end{tabular}
+\end{center}
+
+
+
+
+
+\section{単位換算}
+\begin{center}
+\begin{tabular}{c|c|c|c}\hline
+Pa 又は N/m$^2$       & MPa 又は N/mm$^2$        & kgf/mm$^2$               & kgf/cm$^2$               \\ \hline
+1                     & 1$\times$10$^{-6}$       & 1.01972$\times$10$^{-7}$ & 1.01972$\times$10$^{-5}$ \\
+1$\times$10$^6$       & 1                        & 1.01972$\times$10$^{-1}$ & 1.01972$\times$10        \\
+9.80665$\times$10$^6$ & 9.80665                  & 1                        & 1$\times$10$^2$          \\
+9.80665$\times$10$^4$ & 9.80665$\times$10$^{-2}$ & 1$\times$10$^{-2}$       & 1                        \\ \hline
+\end{tabular}
+\end{center}
+
+
+
+
+\section{colortbl.styの使用事例}
+\begin{tabular}{cccc}
+\cellcolor[rgb]{1,0,0} 1 0 0 & \cellcolor[rgb]{1,0.5,0} 1 0.5 0 & \cellcolor[rgb]{1,1,0} 1 1 0 & \cellcolor[rgb]{1,1,0.5} 1 1 0.5 \\
+\cellcolor[rgb]{0,1,0} 0 1 0 & \cellcolor[rgb]{0.5,1,0} 0 1 0.5 & \cellcolor[rgb]{0,1,1} 0 1 1 & \cellcolor[rgb]{0.5,1,1} 0.5 1 1 \\
+\cellcolor[rgb]{0,0,1} 0 0 1 & \cellcolor[rgb]{0.5,0,1} 0.5 0 1 & \cellcolor[rgb]{1,0,1} 1 0 1 & \cellcolor[rgb]{1,0.5,1} 1 0.5 1 \\
+\end{tabular}
+
+\vspace{1zh}
+\begin{tabular}{cccccc}
+\cellcolor[rgb]{1,0,0} 1 0 0 & \cellcolor[rgb]{0,1,0} 0 1 0 & \cellcolor[rgb]{0,0,1} 0 0 1 & \cellcolor[rgb]{1,1,0} 1 1 0 & \cellcolor[rgb]{0,1,1} 0 1 1 & \cellcolor[rgb]{1,0,1} 1 0 1 \\
+\cellcolor[rgb]{0.5,0,0} 0.5 0 0 & \cellcolor[rgb]{0,0.5,0} 0 0.5 0 & \cellcolor[rgb]{0,0,0.5} 0 0 0.5 & \cellcolor[rgb]{0.5,0.5,0} 0.5 0.5 0 & \cellcolor[rgb]{0,0.5,0.5} 0 0.5 0.5 & \cellcolor[rgb]{0.5,0,0.5} 0.5 0 0.5 \\
+\cellcolor[gray]{0} \textcolor{white}{0} & \cellcolor[gray]{0.25} \textcolor{white}{0.25} & \cellcolor[gray]{0.5} 0.5 & \cellcolor[gray]{0.75} 0.75 & \cellcolor[gray]{0.9} 0.9 & \cellcolor[gray]{1} 1 \\
+\end{tabular}
+
+\vspace{1zh}
+\begin{tabular}{|c|c|c|}\hline
+\rowcolor[rgb]{1,0,0} rowcolor & rgb  & 1 0 0 \\ \hline
+\rowcolor[gray]{0.3}  rowcolor & gray & 0.3   \\ \hline
+\rowcolor[gray]{0.6}  rowcolor & gray & 0.6   \\ \hline
+\rowcolor[gray]{0.9}  rowcolor & gray & 0.9   \\ \hline
+\end{tabular}
+
+\vspace{1zh}
+\begin{tabular}{|>{\columncolor[gray]{.8}}l|>{\columncolor[gray]{.2}\color{white}}c|>{\columncolor{blue}\color{white}}c|}\hline
+one    & two   & blue   \\ \hline
+three  & four  & yellow \\ \hline
+\end{tabular}
+
+\vspace{1zh}
+\newcolumntype{A}{>{\columncolor[rgb]{0.8,0.8,0.8}}p{2cm}}
+\begin{tabular}{A rr}\hline
+\rowcolor[rgb]{0.525,0.113,0.600} & \textcolor{white}{WEEK 1} &\textcolor{white}{WEEK 2}\\
+Sunday    & 10 & 10 \\ \arrayrulecolor[rgb]{0,0,0} \hline
+%Sunday    & 10 & 10 \\ \arrayrulecolor[rgb]{0.835,0.835,0.835} \hline
+\setlength{\arrayrulewidth}{0.1mm}
+Monday    & 10 & 10 \\ \hline
+Tuesday   & 10 & 10 \\ \hline
+Wednesday & 10 & 10 \\ \hline
+Thursday  & 10 & 10 \\ \hline
+Friday    & 10 & 10 \\ \hline
+Saterday  & 10 & 10 \\ \hline
+\end{tabular}
+
+
+
+\begin{equation*}
+\left(
+\begin{array}{ccccc}
+  a_{11} & \cdots & a_{1j} & \cdots & a_{1n} \\
+  \vdots & \ddots & \vdots & \ddots & \vdots \\
+\rowcolor[gray]{0.8} a_{i1} & \cdots & a_{ij} & \cdots & a_{in} \\
+  \vdots & \ddots & \vdots & \ddots & \vdots \\
+  a_{m1} & \cdots & a_{mj} & \cdots & a_{mn}
+\end{array}
+\right)
+\left(
+\begin{array}{cc>{\columncolor[gray]{.8}}ccc}
+  b_{11} & \cdots & b_{1j} & \cdots & b_{1n} \\
+  \vdots & \ddots & \vdots & \ddots & \vdots \\
+  b_{i1} & \cdots & b_{ij} & \cdots & b_{in} \\
+  \vdots & \ddots & \vdots & \ddots & \vdots \\
+  b_{m1} & \cdots & b_{mj} & \cdots & b_{mn}
+\end{array}
+\right)=
+\left(
+\begin{array}{ccccc}
+  c_{11} & \cdots & c_{1j} & \cdots & c_{1n} \\
+  \vdots & \ddots & \vdots & \ddots & \vdots \\
+  c_{i1} & \cdots & \cellcolor[gray]{.8}c_{ij} & \cdots & c_{in} \\
+  \vdots & \ddots & \vdots & \ddots & \vdots \\
+  c_{l1} & \cdots & c_{lj} & \cdots & c_{ln}
+\end{array}
+\right)
+\end{equation*}
+
+
+
+
+
+\section{multirow.styの使用事例}
+\newcommand{\minitab}[2][l]{\begin{tabular}{#1}#2\end{tabular}}
+\begin{tabular}{cc}
+\begin{tabular}{|c|c|}\hline
+\multirow{4}*{Common g text} & Column g2a \\
+                                 & Column g2b \\
+                                 & Column g2c \\
+                                 & Column g2d \\ \hline
+\multirow{3}*{Common g text}  & Column g2a \\ \cline{2-2}
+                                 & Column g2b \\ \cline{2-2}
+                                 & Column g2c \\ \hline
+\multirow{4}*{Common g text} & Column g2a \\ \cline{2-2}
+                                    & Column g2b \\ \cline{2-2}
+                                    & Column g2c \\ \cline{2-2}
+                                    & Column g2d \\ \hline
+\end{tabular}
+&
+\begin{minipage}{7cm}
+\begin{tabular}{|c|c|}\hline
+\multirow{4}*{\minitab[c]{Common \\ g text \\ (minitab=mini-tabular env.)}} & Column g2a\\
+                                             & Column g2b \\
+                                             & Column g2c \\
+                                             & Column g2d \\ \hline
+\multicolumn{1}{l}{}\\
+\end{tabular}
+%
+\begin{tabular}{l>{\columncolor{yellow}}l}
+  aaaa & \\
+  cccc & \\
+  dddd & \multirow{-3}*{bbbb}\\
+\end{tabular}
+%
+\end{minipage}
+\\
+\end{tabular}
+
+
+
+
+
+\section{紙の大きさ}
+\begin{tabular}{l}
+a4paper A4（210mm$\times$297mm）\\
+a5paper A5（148mm$\times$210mm）\\
+b4paper B4（257mm$\times$364mm）\\
+b5paper B5（182mm$\times$257mm）\\
+\end{tabular}
+
+
+
+\section{書体}
+\begin{tabular}{ll}
+\verb|\textmc{明朝体}|     & \textmc{明朝体 abc 0123 ABC}     \\
+\verb|\textgt{ゴシック体}| & \textgt{ゴシック体 abc 0123 ABC} \\
+\verb|\textbf{ボールド体}| & \textbf{ボールド体 abc 0123 ABC} \\
+\verb|\textrm{Roman}|      & \textrm{Roman 012345}            \\
+\verb|\textit{Italic}|     & \textit{Italic 012345}           \\
+\verb|\textsl{Slanted}|    & \textsl{Slanted 012345}          \\
+\verb|\textsf{Sans Serif}| & \textsf{Sans Serif 012345}       \\
+\verb|\texttt{Typewriter}| & \texttt{Typewriter 012345}       \\
+\verb|\textsc{Small Caps}| & \textsc{Small Caps 012345}       \\
+\end{tabular}
+
+
+
+\section{文字サイズ}
+\begin{tabular}{ll}
+tiny         & \tiny         文字サイズ見本 \\
+scriptsize   & \scriptsize   文字サイズ見本 \\
+footnotesize & \footnotesize 文字サイズ見本 \\
+small        & \small        文字サイズ見本 \\
+normalsize   & \normalsize   文字サイズ見本 \\
+large        & \large        文字サイズ見本 \\
+Large        & \Large        文字サイズ見本 \\
+LARGE        & \LARGE        文字サイズ見本 \\
+huge         & \huge         文字サイズ見本 \\
+Huge         & \Huge         文字サイズ見本 \\
+\end{tabular}
+\normalsize
+
+
+
+\section{長さの単位}
+\begin{tabular}{cl}
+cm & センチメートル （1cm=28.34pt）                                  \\
+mm & ミリメートル（1mm=2.835pt）                                     \\
+in & インチ（1in=2.54cm）                                            \\
+pt & ポイント（72.27pt=1in，1pt=0.3514mm）                           \\
+pc & パイカ（1pc=12pt）                                              \\
+bp & ビッグポイント（72bp=1in）                                      \\
+sp & スケールドポイント（65536sp=1pt）                               \\
+em & 欧文フォントの''M''の幅（10ptフォントで1em=10pt）               \\
+ex & 欧文フォントの''x''の高さ（Computer Modern Roman 10ptで約4.3pt）\\
+zw & 和文フォント文字幅                                              \\
+zh & 和文フォント文字高さ                                            \\
+Q  & 級（1Q=0.25mm）                                                 \\
+H  & 歯（1H=0.25mm）                                                 \\
+\end{tabular}
+
+
+
+
+
+\vspace{1zh}
+\section{thebibliography環境の利用}
+文献引用スタイルはプリアンブルにマクロを定義
+
+文献テスト~\cite{1}~\cite{2}を行います．なお参考文献はこの下に出力しています．
+
+
+
+\vspace{1zh}
+\begin{thebibliography}{20}
+\bibitem{1}（社）水門鉄管協会：\newblock 水門鉄管技術基準　水圧鉄管・鉄鋼構造物編，\newblock 1997.5
+\bibitem{2}（社）水門鉄管協会：\newblock 水門鉄管技術基準　水圧鉄管解説追補，\newblock 1974.6
+\bibitem{3}S.P.Timoshenko, J.N.Goodiew: \newblock Theory of Elasticity Third Edition, \newblock McGraw-Hill., 1985
+\bibitem{4}H.C.マーチン/G.F.ケイリー=共著，鷲津久一郎/山本善之=共訳：\newblock 有限要素法の基礎と応用，\newblock 培風館，昭和56年10月
+\end{thebibliography}
+
+\end{document}
