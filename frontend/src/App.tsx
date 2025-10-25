@@ -40,6 +40,23 @@ export default function App() {
 
   useEffect(() => {
     if (!document.getElementById('mathjax-script')) {
+      // ① 設定を先に入れる
+      (window as any).MathJax = {
+        loader: { load: ['[tex]/html'] },
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          processEscapes: true,
+          // これがポイント：\begin{...} をページ全体で拾わない
+          processEnvironments: false,
+          // 必要なら追加パッケージ
+          packages: { '[+]': ['ams', 'html'] },
+        },
+        // pre/code はデフォルトでスキップされるので、後で <div> に出す
+        options: {
+          // MathJax にこの要素だけを typeset させたい時に使う
+          renderActions: {}
+        }
+      };
       const script = document.createElement('script');
       script.id = 'mathjax-script';
       script.async = true;
@@ -47,12 +64,6 @@ export default function App() {
       document.head.appendChild(script);
     }
   }, []);
-
-  useEffect(() => {
-    if (window.MathJax?.typesetPromise) {
-      window.MathJax.typesetPromise();
-    }
-  }, [data?.hits]);
 
   useEffect(() => {
     setSelectedIndex(0);
@@ -66,7 +77,7 @@ export default function App() {
   });
 
   const hits = data?.hits ?? [];
-  const total = data?.total ?? 0;
+  const total = hits.length;
 
   const handleCopy = async (hit: SearchHit) => {
     try {
