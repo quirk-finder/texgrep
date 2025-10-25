@@ -15,3 +15,10 @@ a {
 code {
   font-family: 'Fira Code', 'Source Code Pro', monospace;
 }
+
+/* MathJax の \class{mjx-hl}{...} に当てる */
+.mjx-hl {
+  background: rgba(255, 235, 59, .45);
+  border-radius: 3px;
+  padding: 0 .15em;
+}

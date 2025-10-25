@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { SearchHit } from '../api';
 
@@ -7,6 +7,32 @@ interface ResultListProps {
   selectedIndex: number;
   onSelect: (index: number) => void;
   onCopy: (hit: SearchHit) => void;
+}
+
+function convertMarksInsideMath(html: string): string {
+  const wrap = (s: string) => s.replace(/<mark>([\s\S]*?)<\/mark>/g, (_m, g1) => `\\class{mjx-hl}{${g1}}`);
+  // display 数式（$$ ... $$）
+  html = html.replace(/\$\$([\s\S]*?)\$\$/g, (_m, g1) => `$$${wrap(g1)}$$`);
+  // display 数式（\[ ... \]）
+  html = html.replace(/\\\[([\s\S]*?)\\\]/g, (_m, g1) => `\\[${wrap(g1)}\\]`);
+  // inline 数式（$ ... $）
+  html = html.replace(/\$([\s\S]*?)\$/g, (_m, g1) => `$${wrap(g1)}$`);
+  return html;
+}
+
+function MathSnippet({ snippet }: { snippet: string }) {
+  const htmlForMathJax = useMemo(
+    () => convertMarksInsideMath(snippet),
+    [snippet]
+  );
+
+  return (
+    <div
+      className="w-full rounded-md bg-slate-950/60 p-3 text-sm leading-relaxed text-slate-100
+                 font-mono whitespace-pre-wrap break-words"
+      dangerouslySetInnerHTML={{ __html: htmlForMathJax }}
+    />
+  );
 }
 
 export function ResultList({ hits, selectedIndex, onSelect, onCopy }: ResultListProps) {
@@ -28,11 +54,23 @@ export function ResultList({ hits, selectedIndex, onSelect, onCopy }: ResultList
     }
   }, [selectedIndex, hits.length, virtualizer]);
 
-  // ヒットが変わった（ハイライト増減・MathJax 等で高さ変化）ら再測定
+  // 可視アイテムの“署名”（インデックス列）を作る
+  const visibleItems = virtualizer.getVirtualItems();
+  const visibleSig = visibleItems.map(v => v.key ?? v.index).join(',');
+
+  // 可視範囲だけ MathJax を typeset → 終わったら高さを測り直す
   useEffect(() => {
-    const id = requestAnimationFrame(() => virtualizer.measure());
-    return () => cancelAnimationFrame(id);
-  }, [hits, virtualizer]);
+    const el = parentRef.current as unknown as HTMLElement | null;
+    const mj = (window as any).MathJax;
+    if (!el || !mj?.typesetPromise) return;
+
+    let cancelled = false;
+    mj.typesetPromise([el]).then(() => {
+      if (!cancelled) virtualizer.measure();
+    }).catch(() => {/* noop */});
+
+    return () => { cancelled = true; };
+  }, [visibleSig, hits.length, virtualizer]);
 
   return (
     <div
@@ -56,9 +94,17 @@ export function ResultList({ hits, selectedIndex, onSelect, onCopy }: ResultList
               } pb-4`}                               // ← 余白はクラスで（高さに含まれる）
               style={{ transform: `translateY(${item.start}px)` }} // ← height 指定は削除
             >
-              <button
-                className="mb-4 flex w-full flex-col items-start gap-2 rounded-lg px-4 py-3 text-left"
+              <div
+                className="mb-4 flex w-full flex-col items-start gap-2 rounded-lg px-4 py-3 text-left cursor-pointer"
+                role="button"
+                tabIndex={0}
                 onClick={() => onSelect(item.index)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();           // Space でのスクロール抑止
+                    onSelect(item.index);
+                  }
+                }}
               >
                 <div className="flex w-full items-center justify-between text-sm text-slate-300">
                   <div className="flex flex-wrap items-center gap-2">
@@ -72,7 +118,7 @@ export function ResultList({ hits, selectedIndex, onSelect, onCopy }: ResultList
                       type="button"
                       className="rounded bg-slate-800 px-2 py-1 text-xs text-slate-300 hover:bg-slate-700"
                       onClick={(e) => {
-                        e.stopPropagation();
+                        e.stopPropagation();       // 親の onClick に伝播させない
                         onCopy(hit);
                       }}
                     >
@@ -90,12 +136,8 @@ export function ResultList({ hits, selectedIndex, onSelect, onCopy }: ResultList
                   </div>
                 </div>
 
-                <pre
-                  className="w-full overflow-x-auto whitespace-pre-wrap break-words rounded-md bg-slate-950/60 p-3 text-sm leading-relaxed text-slate-100"
-                >
-                  <code dangerouslySetInnerHTML={{ __html: hit.snippet }} />
-                </pre>
-              </button>
+                <MathSnippet snippet={hit.snippet} />
+              </div>
             </div>
           );
         })}
