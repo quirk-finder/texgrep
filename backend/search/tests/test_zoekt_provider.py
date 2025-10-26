@@ -125,3 +125,44 @@ def test_zoekt_provider_falls_back_when_stats_missing(monkeypatch: pytest.Monkey
 
     provider = get_provider("zoekt")
     assert provider is zoekt.search
+
+
+def test_zoekt_provider_limits_hits_to_request_size(monkeypatch: pytest.MonkeyPatch) -> None:
+    needle = "foo"
+    line_matches = [
+        {"LineNumber": idx + 1, "Line": f"{needle} line {idx}"}
+        for idx in range(10)
+    ]
+    content = "\n".join(match["Line"] for match in line_matches)
+
+    zoekt_response = {
+        "FileMatches": [
+            {
+                "Repository": "samples",
+                "FileName": "foo.tex",
+                "Checksum": "abc123",
+                "URL": "https://example.com/foo.tex",
+                "Content": content,
+                "LineMatches": line_matches,
+            }
+        ],
+        "Stats": {"Duration": 0.01, "MatchCount": len(line_matches)},
+    }
+
+    def fake_post(url: str, payload: dict, *, timeout: float = zoekt.DEFAULT_TIMEOUT) -> dict:
+        return zoekt_response
+
+    monkeypatch.setenv("ZOEKT_URL", "http://zoekt.test:6070")
+    monkeypatch.setattr(zoekt, "_http_post", fake_post)
+    monkeypatch.setattr(
+        zoekt,
+        "_http_get",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("unexpected content fetch")),
+    )
+
+    request = SearchRequest(query=needle, mode="literal", filters={}, page=1, size=3)
+
+    response = zoekt.search(request)
+
+    assert len(response.hits) == request.size
+    assert [hit.line for hit in response.hits] == [1, 2, 3]
