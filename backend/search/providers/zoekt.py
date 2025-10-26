@@ -67,7 +67,10 @@ def _process_file_matches(
     request: SearchRequest,
 ) -> List[SearchHit]:
     results: List[SearchHit] = []
+    max_hits = max(request.size, 0)
     for file_match in matches:
+        if max_hits and len(results) >= max_hits:
+            break
         content = _extract_content(base_url, file_match)
         if content is None:
             continue
@@ -78,6 +81,8 @@ def _process_file_matches(
         url = file_match.get("URL", "") or ""
         line_matches = file_match.get("LineMatches", []) or []
         for raw_line in line_matches:
+            if max_hits and len(results) >= max_hits:
+                break
             line_number = int(raw_line.get("LineNumber", 0) or 0)
             preview = raw_line.get("Line", "") or ""
             match = _build_match(content, line_number, preview, request)
