@@ -108,8 +108,9 @@ class InMemorySearchBackend(SearchBackendProtocol):
                     file_id=doc.file_id,
                     path=doc.path,
                     line=match.line_number,
-                    snippet=snippet,
+                    snippet=snippet.snippet,
                     url=doc.url,
+                    blocks=snippet.blocks,
                 )
             )
         matches.sort(key=lambda hit: hit.path)
@@ -140,8 +141,9 @@ def _process_hits(raw_hits: Sequence[dict], request: SearchRequest) -> List[Sear
                 file_id=source.get("file_id", raw.get("_id", "")),
                 path=source.get("path", ""),
                 line=match.line_number,
-                snippet=snippet,
+                snippet=snippet.snippet,
                 url=source.get("url", ""),
+                blocks=snippet.blocks,
             )
         )
     return results

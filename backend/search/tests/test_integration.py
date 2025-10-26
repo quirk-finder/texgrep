@@ -15,3 +15,8 @@ def test_ingest_and_search_samples():
     response = service.search(request)
     assert response.total >= 1
     assert any("<mark>\\newcommand" in hit.snippet for hit in response.hits)
+    assert any(
+        hit.blocks
+        and any("<mark>\\newcommand" in getattr(block, "html", "") for block in hit.blocks if block.kind == "text")
+        for hit in response.hits
+    )
