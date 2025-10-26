@@ -11,9 +11,24 @@ interface SearchFormProps {
   onFiltersChange: (filters: SearchFilters) => void;
   onSubmit: () => void;
   inputRef: React.RefObject<HTMLInputElement>;
+  regexEnabled: boolean;
+  total?: number;
+  tookEndToEndMs?: number;
 }
 
-export function SearchForm({ query, onQueryChange, mode, onModeChange, filters, onFiltersChange, onSubmit, inputRef }: SearchFormProps) {
+export function SearchForm({
+  query,
+  onQueryChange,
+  mode,
+  onModeChange,
+  filters,
+  onFiltersChange,
+  onSubmit,
+  inputRef,
+  regexEnabled,
+  total,
+  tookEndToEndMs
+}: SearchFormProps) {
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     onSubmit();
@@ -39,8 +54,17 @@ export function SearchForm({ query, onQueryChange, mode, onModeChange, filters, 
             <button
               key={modeOption}
               type="button"
-              onClick={() => onModeChange(modeOption)}
-              className={`px-4 py-2 text-sm font-medium ${modeOption === mode ? 'bg-brand text-white' : 'bg-slate-900 text-slate-300'}`}
+              onClick={() => {
+                if (modeOption === 'regex' && !regexEnabled) return;
+                onModeChange(modeOption);
+              }}
+              disabled={modeOption === 'regex' && !regexEnabled}
+              title={modeOption === 'regex' && !regexEnabled ? 'Regex search is available only when using the Zoekt provider.' : undefined}
+              className={`px-4 py-2 text-sm font-medium ${
+                modeOption === mode
+                  ? 'bg-brand text-white'
+                  : 'bg-slate-900 text-slate-300'
+              } ${modeOption === 'regex' && !regexEnabled ? 'cursor-not-allowed opacity-60' : ''}`}
             >
               {modeOption === 'literal' ? 'Literal' : 'Regex'}
             </button>
@@ -75,9 +99,15 @@ export function SearchForm({ query, onQueryChange, mode, onModeChange, filters, 
             className="w-24 rounded-md border border-slate-700 bg-slate-900 px-2 py-1"
           />
         </label>
-        <p className="ml-auto text-xs uppercase tracking-wide text-slate-500">
-          ⌘K focus · Alt+R regex · j/k move
-        </p>
+        <div className="ml-auto flex flex-col items-end gap-1 text-xs uppercase tracking-wide text-slate-500">
+          <div className="flex gap-3">
+            <span>Total: {total ?? '–'}</span>
+            <span>End-to-end: {tookEndToEndMs !== undefined ? `${tookEndToEndMs} ms` : '–'}</span>
+          </div>
+          <p>
+            ⌘K focus · {regexEnabled ? 'Alt+R regex' : 'Alt+R regex (Zoekt only)'} · j/k move
+          </p>
+        </div>
       </div>
     </form>
   );

@@ -13,6 +13,7 @@ export interface SearchRequest {
   filters?: SearchFilters;
   page?: number;
   size?: number;
+  cursor?: string;
 }
 
 export type SnippetBlock =
@@ -31,7 +32,11 @@ export interface SearchHit {
 export interface SearchResponse {
   hits: SearchHit[];
   total: number;
-  took_ms: number;
+  took_provider_ms: number;
+  took_end_to_end_ms: number;
+  page: number;
+  size: number;
+  next_cursor?: string | null;
 }
 
 export async function searchTex(payload: SearchRequest): Promise<SearchResponse> {
