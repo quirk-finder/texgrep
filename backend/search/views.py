@@ -1,10 +1,20 @@
 from __future__ import annotations
+import time
 
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from .providers import get_provider
+try:
+    from django_ratelimit.decorators import ratelimit as _ratelimit
+    USING_EMBEDDED_RATELIMIT = False
+except Exception:
+    from .ratelimit import ratelimit as _ratelimit
+    USING_EMBEDDED_RATELIMIT = True
+
+ratelimit = _ratelimit
+
+from .providers import get_provider, get_provider_name
 from .serializers import SearchRequestSerializer, SearchResponseSerializer
 from .tasks import reindex_task
 
@@ -15,13 +25,26 @@ def health_view(request):  # type: ignore[override]
 
 
 @api_view(["POST"])
+@ratelimit(key="ip", rate="60/m", block=True)
+@ratelimit(key="ip", rate="1000/d", block=True)
 def search_view(request):  # type: ignore[override]
+    start_time = time.perf_counter()
     serializer = SearchRequestSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     search_request = serializer.validated_data["parsed"]
-    provider = get_provider()
+    provider_name = get_provider_name()
+    if search_request.mode == "regex" and provider_name != "zoekt":
+        return Response(
+            {"message": "regex is only supported with Zoekt"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    provider = get_provider(provider_name)
     response = provider(search_request)
-    payload = SearchResponseSerializer.from_response(response)
+    took_end_to_end_ms = int((time.perf_counter() - start_time) * 1000)
+    payload = SearchResponseSerializer.from_response(
+        response,
+        took_end_to_end_ms=took_end_to_end_ms,
+    )
     return Response(payload)
 
 

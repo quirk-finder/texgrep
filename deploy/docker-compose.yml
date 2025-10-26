@@ -104,6 +104,7 @@ services:
     restart: unless-stopped
 
   zoekt:
+    profiles: ["zoekt"]
     image: ghcr.io/sourcegraph/zoekt-webserver:latest
     expose:
       - "6070"

@@ -34,6 +34,7 @@ class SearchRequest:
     filters: dict[str, str | None]
     page: int
     size: int
+    cursor: Optional[str] = None
 
 
 @dataclass(slots=True)
@@ -50,7 +51,10 @@ class SearchHit:
 class SearchResponse:
     hits: List[SearchHit]
     total: int
-    took_ms: int
+    took_provider_ms: int
+    page: int
+    size: int
+    next_cursor: Optional[str] = None
 
 
 @dataclass(slots=True)

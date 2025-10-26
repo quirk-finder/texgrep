@@ -15,7 +15,7 @@ from ..types import SearchHit, SearchRequest, SearchResponse
 
 ZOEKT_URL_ENV = "ZOEKT_URL"
 DEFAULT_ZOEKT_URL = "http://zoekt:6070"
-DEFAULT_TIMEOUT = 10.0
+DEFAULT_TIMEOUT = 2.0
 
 
 def search(request: SearchRequest) -> SearchResponse:
@@ -23,7 +23,8 @@ def search(request: SearchRequest) -> SearchResponse:
     search_url = f"{base_url}/api/search"
     start = time.monotonic()
 
-    payload = _build_query_payload(request)
+    offset = _resolve_offset(request)
+    payload = _build_query_payload(request, offset)
     data = _http_post(search_url, payload)
     stats = data.get("Stats", {}) or {}
     file_matches: Sequence[dict] = data.get("FileMatches", []) or []
@@ -31,13 +32,21 @@ def search(request: SearchRequest) -> SearchResponse:
 
     took_ms = _extract_duration(stats, data, start)
     total = _extract_total(stats, len(hits))
-    return SearchResponse(hits=hits, total=total, took_ms=took_ms)
+    next_cursor = _build_next_cursor(offset, request.size, total)
+    page = request.page if request.cursor is None else max(offset // request.size + 1, 1)
+    return SearchResponse(
+        hits=hits,
+        total=total,
+        took_provider_ms=took_ms,
+        page=page,
+        size=request.size,
+        next_cursor=next_cursor,
+    )
 
 
-def _build_query_payload(request: SearchRequest) -> dict:
+def _build_query_payload(request: SearchRequest, offset: int) -> dict:
     literal = decode_literal_query(request.query)
     size = request.size
-    offset = max((request.page - 1) * request.size, 0)
     query: dict[str, object] = {
         "query": {
             "type": "substring",
@@ -188,3 +197,19 @@ def _http_get(url: str, params: dict[str, str], *, timeout: float = DEFAULT_TIME
     with urllib_request.urlopen(target, timeout=timeout) as response:
         body = response.read()
     return body.decode("utf-8")
+
+
+def _resolve_offset(request: SearchRequest) -> int:
+    if request.cursor:
+        try:
+            return max(int(request.cursor), 0)
+        except (TypeError, ValueError):
+            return 0
+    return max((request.page - 1) * request.size, 0)
+
+
+def _build_next_cursor(offset: int, size: int, total: int) -> str | None:
+    next_offset = offset + size
+    if next_offset >= total:
+        return None
+    return str(next_offset)
