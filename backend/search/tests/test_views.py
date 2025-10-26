@@ -125,3 +125,37 @@ def test_page_must_be_at_least_one(
     )
 
     assert response.status_code == 400
+
+
+def test_page_must_be_an_integer(
+    api_client: APIClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def _should_not_run(request: SearchRequest) -> SearchResponse:  # pragma: no cover - guard
+        raise AssertionError("provider should not be called")
+
+    _install_provider(monkeypatch, _should_not_run, provider_name="opensearch")
+
+    response = api_client.post(
+        "/api/search",
+        {"q": "foo", "mode": "literal", "page": "abc"},
+        format="json",
+    )
+
+    assert response.status_code == 400
+
+
+def test_size_string_zero_is_rejected(
+    api_client: APIClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def _should_not_run(request: SearchRequest) -> SearchResponse:  # pragma: no cover - guard
+        raise AssertionError("provider should not be called")
+
+    _install_provider(monkeypatch, _should_not_run, provider_name="opensearch")
+
+    response = api_client.post(
+        "/api/search",
+        {"q": "foo", "mode": "literal", "size": "0"},
+        format="json",
+    )
+
+    assert response.status_code == 400
