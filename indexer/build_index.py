@@ -40,6 +40,7 @@ def _preprocess(samples: Iterable[SampleFile]) -> List[IndexDocument]:
                 source=sample.source,
                 content=processed.content,
                 commands=processed.commands,
+                line_offsets=processed.line_offsets,
             )
         )
     return documents

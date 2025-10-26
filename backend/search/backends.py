@@ -53,6 +53,7 @@ class OpenSearchBackend(SearchBackendProtocol):
                 "source": doc.source,
                 "content": doc.content,
                 "commands": list(doc.commands or []),
+                "line_offsets": list(doc.line_offsets or []),
             }
             for doc in documents
         )
@@ -103,11 +104,12 @@ class InMemorySearchBackend(SearchBackendProtocol):
                 mode=request.mode,
                 query=request.query,
             )
+            line_number = _resolve_line_number(doc.line_offsets, match.line_number)
             matches.append(
                 SearchHit(
                     file_id=doc.file_id,
                     path=doc.path,
-                    line=match.line_number,
+                    line=line_number,
                     snippet=snippet.snippet,
                     url=doc.url,
                     blocks=snippet.blocks,
@@ -136,11 +138,13 @@ def _process_hits(raw_hits: Sequence[dict], request: SearchRequest) -> List[Sear
             mode=request.mode,
             query=request.query,
         )
+        line_offsets = source.get("line_offsets")
+        line_number = _resolve_line_number(line_offsets, match.line_number)
         results.append(
             SearchHit(
                 file_id=source.get("file_id", raw.get("_id", "")),
                 path=source.get("path", ""),
-                line=match.line_number,
+                line=line_number,
                 snippet=snippet.snippet,
                 url=source.get("url", ""),
                 blocks=snippet.blocks,
@@ -238,7 +242,21 @@ def _filters_match(request: SearchRequest, doc: IndexDocument) -> bool:
 
 
 def get_index_definition() -> dict:
-    return _index_definition()
+    definition = _index_definition()
+    definition["mappings"]["properties"]["line_offsets"] = {"type": "integer"}
+    return definition
+
+
+def _resolve_line_number(line_offsets: Iterable[int] | None, match_line: int) -> int:
+    if not line_offsets:
+        return match_line
+    offsets_list = list(line_offsets)
+    index = match_line - 1
+    if 0 <= index < len(offsets_list):
+        mapped = offsets_list[index]
+        if isinstance(mapped, int) and mapped > 0:
+            return mapped
+    return match_line
 
 
 def _snippet_lines() -> int:

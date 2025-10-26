@@ -55,6 +55,8 @@ def test_index_definition_preserves_backslash_and_command_prefix() -> None:
     assert content["term_vector"] == "with_positions_offsets"
     assert "ngram" in content["fields"]
 
+    assert "line_offsets" in definition["mappings"]["properties"]
+
 
 def test_literal_search_preserves_backslash_and_highlighting() -> None:
     client = FakeClient(indices=FakeIndices())

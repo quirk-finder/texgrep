@@ -1,5 +1,6 @@
 PROJECT?=texgrep
 COMPOSE=docker compose -f deploy/docker-compose.yml --env-file .env
+INDEX_PROVIDER?=opensearch
 
 up:
 $(COMPOSE) up -d --build
@@ -14,7 +15,7 @@ web:
 $(COMPOSE) exec backend python manage.py runserver 0.0.0.0:8000
 
 reindex:
-$(COMPOSE) exec backend python manage.py tex_reindex --source samples --limit 100
+    DJANGO_SETTINGS_MODULE=texgrep.settings python -m indexer.main --input data/samples --provider $(INDEX_PROVIDER)
 
 shell:
 $(COMPOSE) exec backend python manage.py shell_plus

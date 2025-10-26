@@ -62,3 +62,4 @@ class IndexDocument:
     source: Optional[str]
     content: str
     commands: Optional[Iterable[str]] = None
+    line_offsets: Optional[List[int]] = None
