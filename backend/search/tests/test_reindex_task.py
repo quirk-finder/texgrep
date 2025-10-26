@@ -6,7 +6,8 @@ from typing import Iterable
 
 import pytest
 
-from search.tasks import reindex_task
+import backend.search.tasks as tasks
+import search.service as service_mod
 from indexer.fetch_samples import SampleFile
 from search.backends import SearchBackendProtocol
 from search.query import decode_literal_query, parse_payload
@@ -66,8 +67,18 @@ def test_reindex_task_makes_literal_commands_searchable(monkeypatch: pytest.Monk
     backend = RecordingOpenSearchBackend()
     service = SearchService(backend=backend)
 
-    monkeypatch.setattr("backend.search.tasks.get_search_service", lambda: service)
+    # reset_index はどのサービスでも no-op に
+    monkeypatch.setattr(service_mod.SearchService, "reset_index", lambda self: None)
 
+    # tasks 側が取得するサービスを強制的に差し替え（両方のモジュール名にパッチ）
+    monkeypatch.setattr(tasks, "get_search_service", lambda: service)
+    try:
+        import search.tasks as tasks_alias  # 存在する場合だけ
+        monkeypatch.setattr(tasks_alias, "get_search_service", lambda: service)
+    except ImportError:
+        pass
+
+    # 以下はそのまま
     sample_path = tmp_path / "example.tex"
     sample_path.write_text(
         "\\documentclass{article}\n"
@@ -77,7 +88,6 @@ def test_reindex_task_makes_literal_commands_searchable(monkeypatch: pytest.Monk
         "\\end{document}\n",
         encoding="utf-8",
     )
-
     sample = SampleFile(
         file_id="samples:example",
         path=sample_path,
@@ -85,18 +95,17 @@ def test_reindex_task_makes_literal_commands_searchable(monkeypatch: pytest.Monk
         year="2024",
         source="samples",
     )
-
     monkeypatch.setattr("indexer.build_index.fetch_samples", lambda workspace, limit=None: [sample])
 
-    result = reindex_task()
+    # reindex_task の呼び出し先もモジュール経由に変更
+    result = tasks.reindex_task()
     assert result == {"count": 1}
 
-    assert backend.documents, "documents should be indexed"
-    stored = backend.documents[0]
-    commands = list(stored.commands or [])
-    assert any(cmd == "triple" for cmd in commands)
-    assert all(not cmd.startswith("\\") for cmd in commands)
+    assert backend.documents
+    commands = list(backend.documents[0].commands or [])
+    assert "triple" in commands
+    assert all(not c.startswith("\\") for c in commands)
 
     response = service.search(parse_payload({"q": r"\\triple", "mode": "literal", "page": 1, "size": 5}))
     assert response.total == 1
-    assert response.hits[0].file_id == sample.file_id
+

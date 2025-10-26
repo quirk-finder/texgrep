@@ -1,3 +1,4 @@
+# backend/search/tests/test_views.py
 from __future__ import annotations
 
 import os
@@ -70,7 +71,7 @@ def test_literal_search_records_end_to_end_duration(
 def test_regex_search_rejected_for_non_zoekt(
     api_client: APIClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    def _should_not_run(request: SearchRequest) -> SearchResponse:  # pragma: no cover - guard
+    def _should_not_run(request: SearchRequest) -> SearchResponse:  # pragma: no cover
         raise AssertionError("provider should not be called")
 
     _install_provider(monkeypatch, _should_not_run, provider_name="opensearch")
@@ -127,22 +128,10 @@ def test_page_must_be_at_least_one(
     assert response.status_code == 400
 
 
-def test_reindex_limit_must_be_numeric(
-    api_client: APIClient, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    class _ShouldNotRun:
-        def delay(self, **kwargs: Any) -> None:  # pragma: no cover - guard
-            raise AssertionError("reindex_task.delay should not be called")
-
-    monkeypatch.setattr(views, "reindex_task", _ShouldNotRun())
-
-    response = api_client.post(
-        "/api/reindex",
-        {"source": "samples", "limit": "not-a-number"},
 def test_page_must_be_an_integer(
     api_client: APIClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    def _should_not_run(request: SearchRequest) -> SearchResponse:  # pragma: no cover - guard
+    def _should_not_run(request: SearchRequest) -> SearchResponse:  # pragma: no cover
         raise AssertionError("provider should not be called")
 
     _install_provider(monkeypatch, _should_not_run, provider_name="opensearch")
@@ -154,27 +143,14 @@ def test_page_must_be_an_integer(
     )
 
     assert response.status_code == 400
-    assert response.json()["detail"] == "limit must be a non-negative integer"
-
-
-def test_reindex_limit_must_not_be_negative(
-    api_client: APIClient, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    class _ShouldNotRun:
-        def delay(self, **kwargs: Any) -> None:  # pragma: no cover - guard
-            raise AssertionError("reindex_task.delay should not be called")
-
-    monkeypatch.setattr(views, "reindex_task", _ShouldNotRun())
-
-    response = api_client.post(
-        "/api/reindex",
-        {"source": "samples", "limit": -5},
+    # DRF serializer の典型的なエラー文言
+    assert response.json()["page"][0] == "A valid integer is required."
 
 
 def test_size_string_zero_is_rejected(
     api_client: APIClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    def _should_not_run(request: SearchRequest) -> SearchResponse:  # pragma: no cover - guard
+    def _should_not_run(request: SearchRequest) -> SearchResponse:  # pragma: no cover
         raise AssertionError("provider should not be called")
 
     _install_provider(monkeypatch, _should_not_run, provider_name="opensearch")
@@ -182,6 +158,45 @@ def test_size_string_zero_is_rejected(
     response = api_client.post(
         "/api/search",
         {"q": "foo", "mode": "literal", "size": "0"},
+        format="json",
+    )
+
+    assert response.status_code == 400
+    # DRF serializer の min_value バリデーション
+    assert response.json()["size"][0] == "Ensure this value is greater than or equal to 1."
+
+
+def test_reindex_limit_must_be_numeric(
+    api_client: APIClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class _ShouldNotRun:
+        def delay(self, **kwargs: Any) -> None:  # pragma: no cover
+            raise AssertionError("reindex_task.delay should not be called")
+
+    monkeypatch.setattr(views, "reindex_task", _ShouldNotRun())
+
+    response = api_client.post(
+        "/api/reindex",
+        {"source": "samples", "limit": "not-a-number"},
+        format="json",
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "limit must be a non-negative integer"
+
+
+def test_reindex_limit_must_not_be_negative(
+    api_client: APIClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class _ShouldNotRun:
+        def delay(self, **kwargs: Any) -> None:  # pragma: no cover
+            raise AssertionError("reindex_task.delay should not be called")
+
+    monkeypatch.setattr(views, "reindex_task", _ShouldNotRun())
+
+    response = api_client.post(
+        "/api/reindex",
+        {"source": "samples", "limit": -5},
         format="json",
     )
 
