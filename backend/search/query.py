@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from typing import Any
-
+import warnings
 from .types import SearchMode, SearchRequest
 
 
@@ -105,7 +105,10 @@ def _decode_query(query: str) -> str:
     try:
         import codecs
 
-        return codecs.decode(query, "unicode_escape")
+        # unicode_escape で \w など未対応エスケープがあると DeprecationWarning が出るため抑制
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            return codecs.decode(query, "unicode_escape")
     except Exception:  # pragma: no cover - best effort fallback
         return query
 
