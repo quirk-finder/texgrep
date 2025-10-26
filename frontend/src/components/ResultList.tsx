@@ -7,6 +7,9 @@ interface ResultListProps {
   selectedIndex: number;
   onSelect: (index: number) => void;
   onCopy: (hit: SearchHit) => void;
+  onEndReached?: () => void;
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
 }
 
 function MathBlock({ tex, display = false }: { tex: string; display?: boolean }) {
@@ -40,7 +43,7 @@ function Blocks({ blocks, fallbackSnippet }: { blocks?: SnippetBlock[]; fallback
   );
 }
 
-export function ResultList({ hits, selectedIndex, onSelect, onCopy }: ResultListProps) {
+export function ResultList({ hits, selectedIndex, onSelect, onCopy, onEndReached, hasMore, isLoadingMore }: ResultListProps) {
   const parentRef = useRef<HTMLDivElement | null>(null);
 
   const virtualizer = useVirtualizer({
@@ -58,6 +61,27 @@ export function ResultList({ hits, selectedIndex, onSelect, onCopy }: ResultList
       virtualizer.scrollToIndex(selectedIndex, { align: 'center' });
     }
   }, [selectedIndex, hits.length, virtualizer]);
+
+  useEffect(() => {
+    if (!onEndReached) return;
+    const el = parentRef.current;
+    if (!el) return;
+
+    const handleScroll = () => {
+      if (!onEndReached) return;
+      const threshold = 200;
+      if (el.scrollHeight - (el.scrollTop + el.clientHeight) < threshold) {
+        onEndReached();
+      }
+    };
+
+    el.addEventListener('scroll', handleScroll);
+    handleScroll();
+
+    return () => {
+      el.removeEventListener('scroll', handleScroll);
+    };
+  }, [onEndReached]);
 
   // 可視アイテムの“署名”（インデックス列）を作る
   const visibleItems = virtualizer.getVirtualItems();
@@ -134,15 +158,17 @@ export function ResultList({ hits, selectedIndex, onSelect, onCopy }: ResultList
                     >
                       Copy
                     </button>
-                    <a
-                      href={hit.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs text-brand hover:text-brand-dark"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      Open source
-                    </a>
+                    {hit.url ? (
+                      <a
+                        href={hit.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-brand hover:text-brand-dark"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Open source
+                      </a>
+                    ) : null}
                   </div>
                 </div>
 
@@ -151,6 +177,14 @@ export function ResultList({ hits, selectedIndex, onSelect, onCopy }: ResultList
             </div>
           );
         })}
+        {hasMore || isLoadingMore ? (
+          <div
+            className="absolute left-0 right-0 flex items-center justify-center py-4 text-sm text-slate-400"
+            style={{ top: Math.max(virtualizer.getTotalSize() - 48, 0) }}
+          >
+            {isLoadingMore ? 'Loading more…' : 'Scroll to load more'}
+          </div>
+        ) : null}
       </div>
     </div>
   );

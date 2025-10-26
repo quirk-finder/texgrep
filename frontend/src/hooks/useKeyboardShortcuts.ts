@@ -5,9 +5,10 @@ interface ShortcutHandlers {
   toggleRegex: () => void;
   selectNext: () => void;
   selectPrev: () => void;
+  regexEnabled?: boolean;
 }
 
-export function useKeyboardShortcuts({ focusSearch, toggleRegex, selectNext, selectPrev }: ShortcutHandlers) {
+export function useKeyboardShortcuts({ focusSearch, toggleRegex, selectNext, selectPrev, regexEnabled = true }: ShortcutHandlers) {
   useEffect(() => {
     function handle(event: KeyboardEvent) {
       if (event.defaultPrevented) return;
@@ -17,7 +18,9 @@ export function useKeyboardShortcuts({ focusSearch, toggleRegex, selectNext, sel
       }
       if (event.altKey && event.key.toLowerCase() === 'r') {
         event.preventDefault();
-        toggleRegex();
+        if (regexEnabled) {
+          toggleRegex();
+        }
       }
       if (!event.ctrlKey && !event.metaKey && !event.altKey) {
         if (event.key.toLowerCase() === 'j') {
@@ -33,5 +36,5 @@ export function useKeyboardShortcuts({ focusSearch, toggleRegex, selectNext, sel
 
     window.addEventListener('keydown', handle);
     return () => window.removeEventListener('keydown', handle);
-  }, [focusSearch, toggleRegex, selectNext, selectPrev]);
+  }, [focusSearch, toggleRegex, selectNext, selectPrev, regexEnabled]);
 }

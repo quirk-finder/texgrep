@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
-import { SearchFilters, SearchHit, SearchMode, searchTex } from './api';
+import { SearchFilters, SearchHit, SearchMode, searchTex, SearchRequest, SearchResponse } from './api';
 import { ResultList } from './components/ResultList';
 import { SearchForm } from './components/SearchForm';
 import { useDebouncedValue } from './hooks/useDebouncedValue';
@@ -26,15 +26,61 @@ export default function App() {
   const [filters, setFilters] = useState<SearchFilters>(DEFAULT_FILTERS);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
+  const providerRaw = import.meta.env.VITE_PROVIDER ?? 'unknown';
+  const provider = providerRaw.toString().trim().toLowerCase();
+  const regexEnabled = provider === 'zoekt';
+
   const debouncedQuery = useDebouncedValue(query.trim());
-  const requestPayload = useMemo(() => {
+  const PAGE_SIZE = 20;
+  const requestPayload = useMemo<SearchRequest | undefined>(() => {
     if (!debouncedQuery) return undefined;
-    return { q: debouncedQuery, mode, filters, size: 20 };
+    return { q: debouncedQuery, mode, filters, size: PAGE_SIZE };
   }, [debouncedQuery, mode, filters]);
 
-  const { data, isFetching, refetch } = useQuery({
+  const {
+    data,
+    isFetching,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  } = useInfiniteQuery({
     queryKey: ['search', requestPayload],
-    queryFn: () => (requestPayload ? searchTex(requestPayload) : Promise.resolve({ hits: [], total: 0, took_ms: 0 })),
+    queryFn: async ({ pageParam }: { pageParam?: { page?: number; cursor?: string | null } }) => {
+      if (!requestPayload) {
+        return {
+          hits: [],
+          total: 0,
+          took_provider_ms: 0,
+          took_end_to_end_ms: 0,
+          page: 1,
+          size: PAGE_SIZE,
+          next_cursor: null
+        };
+      }
+
+      const payload = { ...requestPayload };
+      const cursor = pageParam?.cursor ?? null;
+      if (cursor) {
+        delete payload.page;
+        payload.cursor = cursor;
+      } else {
+        payload.page = pageParam?.page ?? 1;
+        delete payload.cursor;
+      }
+
+      return searchTex(payload);
+    },
+    getNextPageParam: (lastPage) => {
+      if (lastPage.next_cursor) {
+        return { cursor: lastPage.next_cursor };
+      }
+      if (lastPage.hits.length >= lastPage.size) {
+        return { page: lastPage.page + 1 };
+      }
+      return undefined;
+    },
+    initialPageParam: { page: 1 },
     enabled: Boolean(requestPayload)
   });
 
@@ -65,19 +111,47 @@ export default function App() {
     }
   }, []);
 
+  const pages = data?.pages ?? [];
+  const hits = useMemo(() => pages.flatMap((page) => page.hits), [pages]);
+  const total = pages.length > 0 ? pages[0].total : undefined;
+  const tookEndToEndMs = pages.length > 0 ? pages[pages.length - 1].took_end_to_end_ms : undefined;
+
+  useEffect(() => {
+    if (!regexEnabled && mode === 'regex') {
+      setMode('literal');
+    }
+  }, [mode, regexEnabled]);
+
   useEffect(() => {
     setSelectedIndex(0);
-  }, [data?.hits]);
+  }, [debouncedQuery, mode, filters]);
 
   useKeyboardShortcuts({
     focusSearch: () => inputRef.current?.focus(),
-    toggleRegex: () => setMode((current) => (current === 'literal' ? 'regex' : 'literal')),
-    selectNext: () => setSelectedIndex((index) => Math.min(Math.max((data?.hits.length || 0) - 1, 0), index + 1)),
-    selectPrev: () => setSelectedIndex((index) => Math.max(0, index - 1))
+    toggleRegex: () => {
+      if (!regexEnabled) return;
+      setMode((current) => (current === 'literal' ? 'regex' : 'literal'));
+    },
+    selectNext: () =>
+      setSelectedIndex((index) => {
+        const maxIndex = Math.max(hits.length - 1, 0);
+        return Math.min(maxIndex, index + 1);
+      }),
+    selectPrev: () => setSelectedIndex((index) => Math.max(0, index - 1)),
+    regexEnabled
   });
 
-  const hits = data?.hits ?? [];
-  const total = hits.length;
+  const totalResultsForDisplay = total ?? hits.length;
+  const statusText = isFetchingNextPage
+    ? 'Loading more…'
+    : isFetching
+      ? 'Searching…'
+      : `${totalResultsForDisplay} results`;
+
+  const handleEndReached = useCallback(() => {
+    if (!hasNextPage || isFetchingNextPage) return;
+    fetchNextPage();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const handleCopy = async (hit: SearchHit) => {
     try {
@@ -93,9 +167,17 @@ export default function App() {
       <header className="space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-white">texgrep.app</h1>
-          <span className="rounded-full border border-slate-800 bg-slate-900 px-3 py-1 text-xs uppercase tracking-wide text-slate-400">
-            {isFetching ? 'Searching…' : `${total} results`}
-          </span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-slate-500">
+              <span>Provider</span>
+              <span className="rounded border border-slate-800 bg-slate-900 px-2 py-1 font-mono text-[0.7rem] text-slate-300">
+                {provider}
+              </span>
+            </div>
+            <span className="rounded-full border border-slate-800 bg-slate-900 px-3 py-1 text-xs uppercase tracking-wide text-slate-400">
+              {statusText}
+            </span>
+          </div>
         </div>
         <SearchForm
           query={query}
@@ -106,10 +188,21 @@ export default function App() {
           onFiltersChange={setFilters}
           onSubmit={() => refetch()}
           inputRef={inputRef}
+          regexEnabled={regexEnabled}
+          total={total}
+          tookEndToEndMs={tookEndToEndMs}
         />
       </header>
       {debouncedQuery ? (
-        <ResultList hits={hits} selectedIndex={selectedIndex} onSelect={setSelectedIndex} onCopy={handleCopy} />
+        <ResultList
+          hits={hits}
+          selectedIndex={selectedIndex}
+          onSelect={setSelectedIndex}
+          onCopy={handleCopy}
+          onEndReached={handleEndReached}
+          hasMore={Boolean(hasNextPage)}
+          isLoadingMore={isFetchingNextPage}
+        />
       ) : (
         <div className="flex flex-1 items-center justify-center rounded-3xl border border-dashed border-slate-800 bg-slate-900/50">
           <div className="text-center text-slate-400">
