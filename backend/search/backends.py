@@ -11,6 +11,8 @@ from . import opensearch_client
 from .snippets import build_snippet, find_match
 from .types import IndexDocument, SearchHit, SearchRequest, SearchResponse
 
+PROVIDER_REQUEST_TIMEOUT = 2
+
 
 class SearchBackendProtocol:
     def search(self, request: SearchRequest) -> SearchResponse:
@@ -61,17 +63,27 @@ class OpenSearchBackend(SearchBackendProtocol):
 
     def search(self, request: SearchRequest) -> SearchResponse:
         query = opensearch_client.build_search_body(request)
-        start = (request.page - 1) * request.size
+        offset = _resolve_offset(request)
         response = self.client.search(
             index=self.index_name,
             body=query,
-            from_=start,
+            from_=offset,
             size=request.size,
+            request_timeout=PROVIDER_REQUEST_TIMEOUT,
         )
         hits = _process_hits(response.get("hits", {}).get("hits", []), request)
         total = int(response.get("hits", {}).get("total", {}).get("value", 0))
         took_ms = int(response.get("took", 0))
-        return SearchResponse(hits=hits, total=total, took_ms=took_ms)
+        next_cursor = _build_next_cursor(offset, request.size, total)
+        page = request.page if request.cursor is None else max(offset // request.size + 1, 1)
+        return SearchResponse(
+            hits=hits,
+            total=total,
+            took_provider_ms=took_ms,
+            page=page,
+            size=request.size,
+            next_cursor=next_cursor,
+        )
 
 
 class InMemorySearchBackend(SearchBackendProtocol):
@@ -116,11 +128,21 @@ class InMemorySearchBackend(SearchBackendProtocol):
                 )
             )
         matches.sort(key=lambda hit: hit.path)
-        start = (request.page - 1) * request.size
+        offset = _resolve_offset(request)
+        start = offset
         end = start + request.size
         slice_hits = matches[start:end]
         took_ms = int((time.monotonic() - start_time) * 1000)
-        return SearchResponse(hits=slice_hits, total=len(matches), took_ms=took_ms)
+        next_cursor = _build_next_cursor(offset, request.size, len(matches))
+        page = request.page if request.cursor is None else max(offset // request.size + 1, 1)
+        return SearchResponse(
+            hits=slice_hits,
+            total=len(matches),
+            took_provider_ms=took_ms,
+            page=page,
+            size=request.size,
+            next_cursor=next_cursor,
+        )
 
 
 def _process_hits(raw_hits: Sequence[dict], request: SearchRequest) -> List[SearchHit]:
@@ -300,3 +322,20 @@ def _snippet_lines() -> int:
         return settings.SEARCH_CONFIG["snippet_lines"]
     except (ImproperlyConfigured, AttributeError, KeyError):  # pragma: no cover - fallback for tests
         return 8
+
+
+def _resolve_offset(request: SearchRequest) -> int:
+    if request.cursor:
+        try:
+            offset = int(request.cursor)
+        except (TypeError, ValueError):
+            offset = 0
+        return max(offset, 0)
+    return max((request.page - 1) * request.size, 0)
+
+
+def _build_next_cursor(offset: int, size: int, total: int) -> str | None:
+    next_offset = offset + size
+    if next_offset >= total:
+        return None
+    return str(next_offset)

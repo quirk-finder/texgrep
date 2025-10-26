@@ -47,7 +47,7 @@ def test_zoekt_provider_returns_snippet_blocks(monkeypatch: pytest.MonkeyPatch) 
     assert post_call["payload"]["query"]["pattern"] == decode_literal_query(request.query)
 
     assert response.total == 1
-    assert response.took_ms == 12
+    assert response.took_provider_ms == 12
     assert response.hits
     hit = response.hits[0]
     assert hit.blocks is not None
@@ -109,7 +109,7 @@ def test_zoekt_provider_falls_back_when_stats_missing(monkeypatch: pytest.Monkey
     response = zoekt.search(request)
 
     assert response.total == 1
-    assert response.took_ms == 250
+    assert response.took_provider_ms == 250
     assert post_calls[0]["payload"]["offset"] == 5
     assert get_calls == [
         {

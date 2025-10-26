@@ -32,6 +32,7 @@ class SearchRequestSerializer(serializers.Serializer):
     filters = serializers.DictField(required=False)
     page = serializers.IntegerField(min_value=1, required=False)
     size = serializers.IntegerField(min_value=1, required=False)
+    cursor = serializers.CharField(required=False, allow_blank=True)
 
     def validate(self, attrs):  # type: ignore[override]
         try:
@@ -53,12 +54,17 @@ class SearchHitSerializer(serializers.Serializer):
 class SearchResponseSerializer(serializers.Serializer):
     hits = SearchHitSerializer(many=True)
     total = serializers.IntegerField()
-    took_ms = serializers.IntegerField()
+    took_provider_ms = serializers.IntegerField()
+    took_end_to_end_ms = serializers.IntegerField()
+    page = serializers.IntegerField()
+    size = serializers.IntegerField()
+    next_cursor = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     @classmethod
-    def from_response(cls, response: SearchResponse) -> dict:
+    def from_response(cls, response: SearchResponse, **extra_fields) -> dict:
         # dataclass（slots=True 含む）→ dict（ネストも展開）
         payload = asdict(response) if is_dataclass(response) else response
+        payload.update({k: v for k, v in extra_fields.items() if v is not None})
         # data として渡して検証してから返す
         serializer = cls(data=payload)
         serializer.is_valid(raise_exception=True)

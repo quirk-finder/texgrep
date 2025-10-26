@@ -21,7 +21,15 @@ class FakeClient:
     def __post_init__(self) -> None:
         self.last_body: dict | None = None
 
-    def search(self, *, index: str, body: dict, from_: int, size: int) -> dict:
+    def search(
+        self,
+        *,
+        index: str,
+        body: dict,
+        from_: int,
+        size: int,
+        request_timeout: int | float | None = None,
+    ) -> dict:
         self.last_body = body
         return {
             "hits": {
@@ -74,6 +82,9 @@ def test_literal_search_preserves_backslash_and_highlighting() -> None:
     assert highlight["type"] == "fvh"
 
     assert response.total == 1
+    assert response.took_provider_ms == 12
+    assert response.page == 1
+    assert response.size == 5
     hit = response.hits[0]
     assert hit.line == 2
     assert "<mark>\\iiint</mark>_{a}^{b}" in hit.snippet

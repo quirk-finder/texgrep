@@ -21,9 +21,10 @@ class RawSearchPayload:
 
 
 DEFAULT_PAGE_SIZE = 20
-MAX_PAGE_SIZE = 100
+MAX_PAGE_SIZE = 50
 MAX_QUERY_LENGTH = 256
 REGEX_TIMEOUT_SECONDS = 0.1
+MAX_OFFSET = 5000
 
 
 def parse_payload(payload: dict[str, Any]) -> SearchRequest:
@@ -41,8 +42,9 @@ def parse_payload(payload: dict[str, Any]) -> SearchRequest:
     size = int(payload.get("size") or DEFAULT_PAGE_SIZE)
     if page < 1:
         raise QueryValidationError("Page must be >= 1")
-    if size < 1 or size > MAX_PAGE_SIZE:
+    if size < 1:
         raise QueryValidationError("Invalid page size")
+    size = min(size, MAX_PAGE_SIZE)
 
     filters = payload.get("filters") or {}
     if not isinstance(filters, dict):
@@ -58,12 +60,24 @@ def parse_payload(payload: dict[str, Any]) -> SearchRequest:
     if mode == "regex":
         validate_regex(query)
 
+    cursor_raw = payload.get("cursor")
+    cursor: str | None
+    if cursor_raw is None:
+        cursor = None
+        if page * size > MAX_OFFSET:
+            raise QueryValidationError("Page too deep")
+    else:
+        cursor = str(cursor_raw).strip()
+        if cursor == "":
+            cursor = None
+
     return SearchRequest(
         query=query,
         mode=mode,
         filters=normalized_filters,
         page=page,
         size=size,
+        cursor=cursor,
     )
 
 

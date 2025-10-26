@@ -17,9 +17,13 @@ def test_search_response_serializer_roundtrip():
             )
         ],
         total=1,
-        took_ms=5,
+        took_provider_ms=5,
+        page=1,
+        size=20,
     )
-    payload = SearchResponseSerializer.from_response(response)
+    payload = SearchResponseSerializer.from_response(response, took_end_to_end_ms=7)
     assert payload["total"] == 1
     assert payload["hits"][0]["path"] == "file.tex"
     assert payload["hits"][0]["blocks"][0]["html"] == "Example <mark>hit</mark>"
+    assert payload["took_provider_ms"] == 5
+    assert payload["took_end_to_end_ms"] == 7
