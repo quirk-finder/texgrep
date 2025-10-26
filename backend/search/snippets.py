@@ -191,6 +191,8 @@ def _build_blocks(
                 len(math_content),
                 highlight_spans,
             )
+            # ★ 追加: コマンド名にマッチしたとき、直後の * / [..] / {...} をハイライト範囲に含める
+            spans = _expand_tex_command_spans(math_content, spans)
             rendered_tex = _render_math_with_highlight(math_content, spans)
             blocks.append(
                 MathSnippetBlock(
@@ -236,8 +238,52 @@ def _render_with_highlight(snippet_text: str, spans: Iterable[Tuple[int, int]]) 
     return "".join(rendered)
 
 
+def _expand_tex_command_spans(tex: str, spans: Sequence[Tuple[int, int]]) -> List[Tuple[int, int]]:
+    """ハイライトが \command に掛かったとき、直後の * / [..] / 最初の {...} を含むように拡張する。"""
+    out: List[Tuple[int, int]] = []
+    n = len(tex)
+    for s, e in spans:
+        if 0 <= s < n and tex[s] == "\\":  # \command に命中
+            j = s + 1
+            # 制御綴り名（英字列） or 1文字制御綴り
+            if j < n and tex[j].isalpha():
+                while j < n and tex[j].isalpha():
+                    j += 1
+            else:
+                j = min(s + 2, n)
+            k = j
+            # 空白
+            while k < n and tex[k].isspace():
+                k += 1
+            # 任意の *
+            if k < n and tex[k] == "*":
+                k += 1
+                while k < n and tex[k].isspace():
+                    k += 1
+            # 任意の [ ... ]（入れ子は簡易対応）
+            if k < n and tex[k] == "[":
+                depth = 1; k += 1
+                while k < n and depth:
+                    if tex[k] == "[": depth += 1
+                    elif tex[k] == "]": depth -= 1
+                    k += 1
+                while k < n and tex[k].isspace():
+                    k += 1
+            # 最初の { ... }（入れ子は簡易対応）
+            if k < n and tex[k] == "{":
+                depth = 1; k += 1
+                while k < n and depth:
+                    if tex[k] == "{": depth += 1
+                    elif tex[k] == "}": depth -= 1
+                    k += 1
+            e = max(e, k)
+        out.append((s, e))
+    return out
+
 def _render_math_with_highlight(tex: str, spans: Iterable[Tuple[int, int]]) -> str:
     spans_list = sorted((start, end) for start, end in spans if end > start)
+    # ---- 追加: コマンドとその引数を丸ごと含むように拡張 ----
+    spans_list = _expand_tex_command_spans(tex, spans_list)
     if not spans_list:
         return tex
     rendered: List[str] = []
