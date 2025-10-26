@@ -42,6 +42,7 @@ def _build_query_payload(request: SearchRequest) -> dict:
         "query": {
             "type": "substring",
             "pattern": literal,
+            "caseSensitive": True,
         },
         "num": size,
         "offset": offset,
