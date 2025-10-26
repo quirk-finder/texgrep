@@ -16,8 +16,8 @@ services:
       - ../scripts:/app/scripts
       - backend_static:/app/staticfiles
     command: ["uvicorn", "texgrep.asgi:application", "--host", "0.0.0.0", "--port", "8000"]
-    ports:
-      - "8000:8000"
+    # ports: # Bind for 0.0.0.0:8000 failed: port is already allocatedの対策で
+    #   - "8000:8000"
     depends_on:
       opensearch:
         condition: service_healthy
@@ -74,8 +74,8 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    # ports: # ホスト側 9200 衝突（Bind for 0.0.0.0:9200 failed）を避けるため
+    #   - "6379:6379"
     restart: unless-stopped
 
   opensearch:
@@ -97,8 +97,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 40
-    ports:
-      - "9200:9200"
+    # ports: # ホスト側 9200 衝突（Bind for 0.0.0.0:9200 failed）を避けるため
+    #   - "9200:9200"
     volumes:
       - opensearch_data:/usr/share/opensearch/data   # ★ 追加
     restart: unless-stopped

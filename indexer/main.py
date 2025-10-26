@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -48,36 +49,34 @@ def main() -> None:
 
 def index_with_opensearch(records: Iterable[IndexRecord]) -> None:
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "texgrep.settings")
-    backend_path = Path(__file__).resolve().parents[1] / "backend"
-    if str(backend_path) not in sys.path:
-        sys.path.append(str(backend_path))
-
     import django
-
     django.setup()
 
-    from backend.search.backends import OpenSearchBackend
+    from backend.search.service import SearchService
     from backend.search.types import IndexDocument
-
-    backend = OpenSearchBackend()
-    backend.create_index()
 
     documents: List[IndexDocument] = []
     for record in records:
+        # ★ 先頭のバックスラッシュを剥がす（\iiint → iiint）
+        raw_cmds = list(record.commands or [])
+        normalized_cmds = [(c[1:] if c.startswith("\\") else c) for c in raw_cmds]
+
         documents.append(
             IndexDocument(
                 file_id=record.file_id,
                 path=record.path,
                 url=record.url or "",
                 year=record.year,
-                source=record.source,
+                source=record.source or "samples",
                 content=record.content,
-                commands=record.commands,
+                commands=normalized_cmds,   # ★ ここを差し替え
                 line_offsets=record.line_offsets,
             )
         )
 
-    backend.index_documents(documents)
+    service = SearchService()
+    service.reset_index()
+    service.index_documents(documents)
 
 
 def index_with_zoekt(records: Iterable[IndexRecord], *, corpus: str, root: Path) -> None:

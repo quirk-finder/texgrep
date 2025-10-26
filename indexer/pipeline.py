@@ -4,9 +4,10 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterator, List, Optional
-
+from typing import Union
 from .preprocess import preprocess_file
 
+StrPath = Union[str, Path]
 
 @dataclass(slots=True)
 class IndexRecord:
@@ -69,7 +70,8 @@ def collect_records(root: Path, *, limit: int | None = None) -> List[IndexRecord
     return list(iter_records(root, limit=limit))
 
 
-def ensure_root(path: Path) -> Path:
+def ensure_root(path: StrPath) -> Path:
+    path = Path(path)  # ★ ここで Path 化
     root = path.resolve()
     if not root.exists():
         raise FileNotFoundError(f"Input directory '{path}' does not exist")

@@ -41,7 +41,7 @@ class SearchHit:
     file_id: str
     path: str
     line: int
-    url: str
+    url: str = ""
     snippet: Optional[str] = None
     blocks: Optional[List[SnippetBlock]] = None
 

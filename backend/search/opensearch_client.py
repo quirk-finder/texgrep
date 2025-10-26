@@ -38,11 +38,20 @@ def build_search_body(request: SearchRequest) -> dict:
 
 def _literal_clause(query: str) -> dict:
     literal = decode_literal_query(query)
-    should = [
-        {"match_phrase": {"content": {"query": literal}}},            # 本文そのまま
-        {"term": {"commands": literal}},                              # 完全一致（例: "\iiint"）
-        {"match": {"commands.prefix": {"query": literal, "operator": "and"}}},  # 先頭一致
-    ]
+    # commands 用は先頭の \ を除いた正規化形を使う
+    norm = literal[1:] if literal.startswith("\\") else literal
+
+    # 本文は「そのまま」と「\ の有無を反転した形」の両方で should
+    should = [{"match_phrase": {"content": {"query": literal}}}]
+    alt = ("\\" + norm) if not literal.startswith("\\") else norm
+    if alt != literal:
+        should.append({"match_phrase": {"content": {"query": alt}}})
+
+    # commands（完全一致 / 先頭一致）
+    should.extend([
+        {"term": {"commands": norm}},
+        {"match": {"commands.prefix": {"query": norm, "operator": "and"}}},
+    ])
     return {"bool": {"should": should, "minimum_should_match": 1}}
 
 

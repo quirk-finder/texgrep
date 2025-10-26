@@ -1,34 +1,79 @@
-PROJECT?=texgrep
-COMPOSE=docker compose -f deploy/docker-compose.yml --env-file .env
-INDEX_PROVIDER?=opensearch
+# --- Windows/MSYS のパス変換を常に無効化（Linux/Mac でも無害） ---
+export MSYS_NO_PATHCONV := 1
+export MSYS2_ARG_CONV_EXCL := *
+
+PROJECT ?= texgrep
+COMPOSE  = docker compose -f deploy/docker-compose.yml --env-file .env
+
+# 索引のデフォルト。サンプルを使うなら /app/indexer/sample_corpus
+INDEX_PROVIDER ?= opensearch
+INDEX_INPUT    ?= /app/indexer/sample_corpus
+
+# 起動するサービス（必要ならここで増減）
+SERVICES ?= backend frontend opensearch redis
+
+.PHONY: help up down restart ps logs backend-sh frontend-sh shell reindex fmt test bench
+
+help:
+	@echo "make up           - build & start $(SERVICES)"
+	@echo "make down         - stop & remove"
+	@echo "make restart      - restart all services"
+	@echo "make ps           - show containers"
+	@echo "make logs         - tail logs"
+	@echo "make backend-sh   - bash into backend"
+	@echo "make frontend-sh  - bash into frontend"
+	@echo "make shell        - Django shell_plus"
+	@echo "make reindex      - index from $(INDEX_INPUT) (provider=$(INDEX_PROVIDER))"
+	@echo "                   e.g. make reindex INDEX_INPUT=/app/data/samples"
+	@echo "make fmt/test/bench - code tasks"
 
 up:
-$(COMPOSE) up -d --build
+	$(COMPOSE) up -d --build $(SERVICES)
 
 down:
-$(COMPOSE) down
+	$(COMPOSE) down
+
+restart: down up
+
+ps:
+	$(COMPOSE) ps
 
 logs:
-$(COMPOSE) logs -f
+	$(COMPOSE) logs -f
 
-web:
-$(COMPOSE) exec backend python manage.py runserver 0.0.0.0:8000
+backend-sh:
+	$(COMPOSE) exec backend bash
 
-reindex:
-    DJANGO_SETTINGS_MODULE=texgrep.settings python -m indexer.main --input data/samples --provider $(INDEX_PROVIDER)
+frontend-sh:
+	$(COMPOSE) exec frontend bash
 
 shell:
-$(COMPOSE) exec backend python manage.py shell_plus
+	$(COMPOSE) exec backend python manage.py shell_plus
+
+reindex:
+	$(COMPOSE) exec backend python -m indexer.main --input $(INDEX_INPUT) --provider $(INDEX_PROVIDER)
 
 fmt:
-$(COMPOSE) exec backend ruff format
-$(COMPOSE) exec backend ruff check --fix
-$(COMPOSE) exec frontend npm run lint
+	$(COMPOSE) exec backend ruff format
+	$(COMPOSE) exec backend ruff check --fix
+	$(COMPOSE) exec frontend npm run lint
 
 test:
-$(COMPOSE) exec backend pytest
+	$(COMPOSE) exec backend pytest
 
 bench:
-$(COMPOSE) exec backend python scripts/bench_local.py
+	$(COMPOSE) exec backend python scripts/bench_local.py
 
-.PHONY: up down logs web reindex shell fmt test bench
+# 追加
+restart-backend:
+	$(COMPOSE) restart backend
+
+ps:
+	$(COMPOSE) ps
+
+api-smoke:
+	@echo '{"q":"\\iiint","mode":"literal","filters":{"source":"samples"},"size":5}' | \
+	$(COMPOSE) exec -T backend bash -lc "curl -s -XPOST -H 'Content-Type: application/json' http://localhost:8000/api/search -d @- | jq ."
+
+refresh:
+	restart reindex

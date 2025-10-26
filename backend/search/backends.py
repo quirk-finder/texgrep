@@ -129,25 +129,51 @@ def _process_hits(raw_hits: Sequence[dict], request: SearchRequest) -> List[Sear
         source = raw.get("_source", {})
         content = source.get("content", "")
         match = find_match(content, request)
+        # 1st fallback: \ の有無を反転して再トライ（literal のときだけ）
+        if not match and request.mode == "literal":
+            alt_q = request.query[1:] if request.query.startswith("\\") else "\\" + request.query
+            alt_req = SearchRequest(
+                query=alt_q,
+                mode=request.mode,
+                page=request.page,
+                size=request.size,
+                filters=request.filters,
+            )
+            match = find_match(content, alt_req)
+
+        # 2nd fallback: それでも見つからなければ結果は捨てず、素朴スニペットを返す
+        simple_fallback = False
         if not match:
-            continue
-        snippet = build_snippet(
-            content,
-            match,
-            context_lines=_snippet_lines(),
-            mode=request.mode,
-            query=request.query,
-        )
+            simple_fallback = True
+        if not simple_fallback:
+            snippet_obj = build_snippet(
+                content,
+                match,
+                context_lines=_snippet_lines(),
+                mode=request.mode,
+                query=request.query,
+            )
+            snippet_text = snippet_obj.snippet
+            blocks = snippet_obj.blocks
+            match_line = match.line_number
+        else:
+            # 先頭から数行をスニペットとして返す（見た目が途切れないように）
+            lines = content.splitlines()
+            head = lines[: max(1, _snippet_lines())]
+            snippet_text = "\n".join(head)
+            blocks = []
+            match_line = 1  # 先頭行扱い
+
         line_offsets = source.get("line_offsets")
-        line_number = _resolve_line_number(line_offsets, match.line_number)
+        line_number = _resolve_line_number(line_offsets, match_line)
         results.append(
             SearchHit(
                 file_id=source.get("file_id", raw.get("_id", "")),
                 path=source.get("path", ""),
                 line=line_number,
-                snippet=snippet.snippet,
+                snippet=snippet_text,
                 url=source.get("url", ""),
-                blocks=snippet.blocks,
+                blocks=blocks,
             )
         )
     return results
@@ -157,7 +183,6 @@ def _index_definition() -> dict:
     return {
         "settings": {
             "index": {
-                # ngram/edge_ngram の (max_gram - min_gram) 許容差
                 "max_ngram_diff": 20
             },
             "analysis": {
@@ -178,12 +203,21 @@ def _index_definition() -> dict:
                         "min_gram": 2,
                         "max_gram": 15,
                     },
+                    # ★ LaTeX コマンド抽出（\\iiint → iiint を増殖）
+                    "tex_command_capture": {
+                        "type": "pattern_capture",
+                        "preserve_original": True,
+                        "patterns": [
+                            r"\\\\([A-Za-z]+\\*?)"  # \iiint, \foo*
+                        ],
+                    },
                 },
                 "analyzer": {
+                    # ★ 本文用。whitespace 分割＋小文字化＋コマンド抽出
                     "tex_analyzer": {
                         "type": "custom",
                         "tokenizer": "tex_tokenizer",
-                        "filter": [],
+                        "filter": ["lowercase", "tex_command_capture"],
                     },
                     "command_prefix": {
                         "type": "custom",
@@ -206,7 +240,7 @@ def _index_definition() -> dict:
                 "year": {"type": "keyword"},
                 "source": {"type": "keyword"},
                 "commands": {
-                    "type": "keyword",
+                    "type": "keyword",  # ← ここは keyword のままでOK（後述の正規化で合わせる）
                     "fields": {
                         "prefix": {
                             "type": "text",
@@ -229,6 +263,8 @@ def _index_definition() -> dict:
             }
         },
     }
+
+
 
 
 def _filters_match(request: SearchRequest, doc: IndexDocument) -> bool:
