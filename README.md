@@ -24,6 +24,27 @@ Services:
 - Frontend: <http://localhost:5173>
 - API: <http://localhost:8000/api/health>
 - OpenSearch: <http://localhost:9200>
+- Zoekt webserver (optional): internal port 6070
+
+### Search providers
+
+The backend can talk to either OpenSearch (default) or a Zoekt sidecar. Set
+`SEARCH_PROVIDER=zoekt` (and optionally `ZOEKT_URL`) in your environment to
+switch providers without rebuilding containers.
+
+| Provider | Pros | Cons |
+| --- | --- | --- |
+| OpenSearch | Regex support, structured filters, existing ingestion pipeline | Heavier footprint, higher latency for small literal searches |
+| Zoekt | Fast literal substring search, lightweight deployment | Regex + filters not yet implemented, requires separate index build |
+
+To run Zoekt locally, bring up the sidecar alongside the backend and frontend:
+
+```bash
+docker compose -f deploy/docker-compose.yml up -d zoekt backend frontend
+```
+
+Zoekt stores indexes under the `zoekt_data` volume and listens on `http://zoekt:6070`
+inside the Compose network by default.
 
 ### Developer workflow
 

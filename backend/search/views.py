@@ -4,8 +4,8 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from .providers import get_provider
 from .serializers import SearchRequestSerializer, SearchResponseSerializer
-from .service import get_search_service
 from .tasks import reindex_task
 
 
@@ -19,8 +19,8 @@ def search_view(request):  # type: ignore[override]
     serializer = SearchRequestSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     search_request = serializer.validated_data["parsed"]
-    service = get_search_service()
-    response = service.search(search_request)
+    provider = get_provider()
+    response = provider(search_request)
     payload = SearchResponseSerializer.from_response(response)
     return Response(payload)
 

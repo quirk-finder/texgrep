@@ -9,6 +9,7 @@ services:
       - PYTHONPATH=/app/backend:/app
       - DJANGO_SETTINGS_MODULE=texgrep.settings
       - OPENSEARCH_URL=http://opensearch:9200
+      - ZOEKT_URL=http://zoekt:6070
     volumes:
       - ../backend:/app/backend
       - ../indexer:/app/indexer
@@ -34,6 +35,7 @@ services:
       - PYTHONPATH=/app/backend:/app
       - DJANGO_SETTINGS_MODULE=texgrep.settings
       - OPENSEARCH_URL=http://opensearch:9200
+      - ZOEKT_URL=http://zoekt:6070
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     volumes:
@@ -101,6 +103,15 @@ services:
       - opensearch_data:/usr/share/opensearch/data   # ★ 追加
     restart: unless-stopped
 
+  zoekt:
+    image: ghcr.io/sourcegraph/zoekt-webserver:latest
+    expose:
+      - "6070"
+    volumes:
+      - zoekt_data:/data
+    restart: unless-stopped
+
 volumes:
   backend_static:
   opensearch_data:
+  zoekt_data:
