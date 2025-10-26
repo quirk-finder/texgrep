@@ -26,3 +26,13 @@ def test_parse_regex_validated():
 def test_parse_rejects_invalid_regex():
     with pytest.raises(QueryValidationError):
         parse_payload({"q": "[", "mode": "regex"})
+
+
+def test_parse_rejects_non_integer_page():
+    with pytest.raises(QueryValidationError, match="Page must be an integer"):
+        parse_payload({"q": "foo", "page": "abc"})
+
+
+def test_parse_rejects_non_integer_size():
+    with pytest.raises(QueryValidationError, match="Page size must be an integer"):
+        parse_payload({"q": "foo", "size": "abc"})

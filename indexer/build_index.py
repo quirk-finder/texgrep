@@ -28,13 +28,32 @@ def build_index(service: SearchService, *, source: str, limit: int | None = None
         return documents
 
 
+def _normalize_command(command: str) -> str:
+    return command[1:] if command.startswith("\\") else command
+
+
+def _normalize_commands(commands: Iterable[str]) -> List[str]:
+    normalized: List[str] = []
+    seen: set[str] = set()
+    for command in commands:
+        if not command:
+            continue
+        norm = _normalize_command(command)
+        if norm in seen:
+            continue
+        seen.add(norm)
+        normalized.append(norm)
+    return normalized
+
+
 def _preprocess(samples: Iterable[SampleFile]) -> List[IndexDocument]:
     documents: List[IndexDocument] = []
     for sample in samples:
         processed = preprocess_file(sample.path)
-        cmds = list(processed.commands or [])
+        cmds = _normalize_commands(processed.commands or [])
         if not cmds:
-            cmds = sorted(set(re.findall(r'\\([A-Za-z]+)', processed.content)))
+            extracted = sorted(set(re.findall(r'\\[A-Za-z]+', processed.content)))
+            cmds = _normalize_commands(extracted)
         documents.append(
             IndexDocument(
                 file_id=sample.file_id,

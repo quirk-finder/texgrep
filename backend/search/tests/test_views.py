@@ -139,6 +139,17 @@ def test_reindex_limit_must_be_numeric(
     response = api_client.post(
         "/api/reindex",
         {"source": "samples", "limit": "not-a-number"},
+def test_page_must_be_an_integer(
+    api_client: APIClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def _should_not_run(request: SearchRequest) -> SearchResponse:  # pragma: no cover - guard
+        raise AssertionError("provider should not be called")
+
+    _install_provider(monkeypatch, _should_not_run, provider_name="opensearch")
+
+    response = api_client.post(
+        "/api/search",
+        {"q": "foo", "mode": "literal", "page": "abc"},
         format="json",
     )
 
@@ -158,6 +169,19 @@ def test_reindex_limit_must_not_be_negative(
     response = api_client.post(
         "/api/reindex",
         {"source": "samples", "limit": -5},
+
+
+def test_size_string_zero_is_rejected(
+    api_client: APIClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def _should_not_run(request: SearchRequest) -> SearchResponse:  # pragma: no cover - guard
+        raise AssertionError("provider should not be called")
+
+    _install_provider(monkeypatch, _should_not_run, provider_name="opensearch")
+
+    response = api_client.post(
+        "/api/search",
+        {"q": "foo", "mode": "literal", "size": "0"},
         format="json",
     )
 
