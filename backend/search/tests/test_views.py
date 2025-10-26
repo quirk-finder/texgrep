@@ -125,3 +125,41 @@ def test_page_must_be_at_least_one(
     )
 
     assert response.status_code == 400
+
+
+def test_reindex_limit_must_be_numeric(
+    api_client: APIClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class _ShouldNotRun:
+        def delay(self, **kwargs: Any) -> None:  # pragma: no cover - guard
+            raise AssertionError("reindex_task.delay should not be called")
+
+    monkeypatch.setattr(views, "reindex_task", _ShouldNotRun())
+
+    response = api_client.post(
+        "/api/reindex",
+        {"source": "samples", "limit": "not-a-number"},
+        format="json",
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "limit must be a non-negative integer"
+
+
+def test_reindex_limit_must_not_be_negative(
+    api_client: APIClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class _ShouldNotRun:
+        def delay(self, **kwargs: Any) -> None:  # pragma: no cover - guard
+            raise AssertionError("reindex_task.delay should not be called")
+
+    monkeypatch.setattr(views, "reindex_task", _ShouldNotRun())
+
+    response = api_client.post(
+        "/api/reindex",
+        {"source": "samples", "limit": -5},
+        format="json",
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "limit must be a non-negative integer"

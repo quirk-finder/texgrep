@@ -54,6 +54,20 @@ def reindex_view(request):  # type: ignore[override]
     if source not in {"samples", "arxiv"}:
         return Response({"detail": "Unknown source"}, status=status.HTTP_400_BAD_REQUEST)
     limit_value = request.data.get("limit")
-    limit = int(limit_value) if limit_value is not None else None
+    if limit_value is not None:
+        try:
+            limit = int(limit_value)
+        except (TypeError, ValueError):
+            return Response(
+                {"detail": "limit must be a non-negative integer"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if limit < 0:
+            return Response(
+                {"detail": "limit must be a non-negative integer"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    else:
+        limit = None
     task = reindex_task.delay(source=source, limit=limit)
     return Response({"task_id": task.id, "status": "queued"}, status=status.HTTP_202_ACCEPTED)
