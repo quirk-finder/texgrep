@@ -33,7 +33,8 @@ up:
 down:
 	$(COMPOSE) down
 
-restart: down up
+restart:
+	down up
 
 ps:
 	$(COMPOSE) ps
@@ -68,12 +69,23 @@ bench:
 restart-backend:
 	$(COMPOSE) restart backend
 
-ps:
-	$(COMPOSE) ps
-
 api-smoke:
-	@echo '{"q":"\\iiint","mode":"literal","filters":{"source":"samples"},"size":5}' | \
-	$(COMPOSE) exec -T backend bash -lc "curl -s -XPOST -H 'Content-Type: application/json' http://localhost:8000/api/search -d @- | jq ."
+	$(COMPOSE) exec -T backend sh -lc "curl -sS -i -XPOST -H 'Content-Type: application/json' --data '{\"q\":\"\\\\iiint\",\"mode\":\"literal\",\"filters\":{\"source\":\"samples\"},\"size\":5}' http://localhost:8000/api/search || true"
 
 refresh:
 	restart reindex
+
+api-health:
+	$(COMPOSE) exec -T backend sh -lc "curl -sS -i http://localhost:8000/api/health || true"
+
+api-debug:
+	$(COMPOSE) exec -T backend sh -lc "curl -sS -v -XPOST -H 'Content-Type: application/json' --data '{\"q\":\"\\\\iiint\",\"mode\":\"literal\",\"filters\":{\"source\":\"samples\"},\"size\":5}' http://localhost:8000/api/search || true"
+
+api-logs:
+	$(COMPOSE) logs backend --tail=200
+
+pi-regex-smoke:
+	@$(COMPOSE) exec -T backend sh -lc '\
+	  payload=$$(printf "%s" "{\"q\":\"a+\",\"mode\":\"regex\",\"filters\":{\"source\":\"samples\"}}"); \
+	  curl -sS -i -XPOST -H "Content-Type: application/json" --data "$$payload" http://localhost:8000/api/search || true \
+	'

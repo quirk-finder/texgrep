@@ -4,7 +4,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential curl git && rm -rf /var/lib/apt/lists/*
+    build-essential curl git jq && rm -rf /var/lib/apt/lists/*
 
 # ★ /app/backend を作業ディレクトリに
 WORKDIR /app/backend

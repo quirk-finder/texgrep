@@ -6,9 +6,13 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 try:
-    from ratelimit.decorators import ratelimit
-except ImportError:  # pragma: no cover - fallback when dependency unavailable
-    from .ratelimit import ratelimit
+    from django_ratelimit.decorators import ratelimit as _ratelimit
+    USING_EMBEDDED_RATELIMIT = False
+except Exception:
+    from .ratelimit import ratelimit as _ratelimit
+    USING_EMBEDDED_RATELIMIT = True
+
+ratelimit = _ratelimit
 
 from .providers import get_provider, get_provider_name
 from .serializers import SearchRequestSerializer, SearchResponseSerializer
@@ -21,8 +25,8 @@ def health_view(request):  # type: ignore[override]
 
 
 @api_view(["POST"])
-@ratelimit(key="ip-or-header:x-forwarded-for", rate="60/m", block=True)
-@ratelimit(key="ip-or-header:x-forwarded-for", rate="1000/d", block=True)
+@ratelimit(key="ip", rate="60/m", block=True)
+@ratelimit(key="ip", rate="1000/d", block=True)
 def search_view(request):  # type: ignore[override]
     start_time = time.perf_counter()
     serializer = SearchRequestSerializer(data=request.data)
