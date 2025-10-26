@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Iterable, List
+from collections.abc import Iterable
 
 from django.conf import settings
 from opensearchpy import OpenSearch
@@ -11,6 +11,9 @@ from .types import SearchRequest
 
 _SAFE_META_CHARS = set("[](){}|")
 _UNSAFE_QUANTIFIER = re.compile(r"(?<!\\)[+?*]")
+SAFE_REGEX_MAX_LEN = 64
+MIN_TOKEN_LEN = 2
+MAX_UNIQUE_GRAMS = 20
 
 
 def create_client() -> OpenSearch:
@@ -18,14 +21,15 @@ def create_client() -> OpenSearch:
     return OpenSearch(hosts=[settings.OPENSEARCH_HOST], verify_certs=False)
 
 
-def build_search_body(request: SearchRequest) -> dict:
+def build_search_body(request: SearchRequest) -> dict[str, object]:
     """Build the OpenSearch query body for a search request."""
-    if request.mode == "literal":
-        must_clause = _literal_clause(request.query)
-    else:
-        must_clause = _regex_clause(request.query)
+    must_clause = (
+        _literal_clause(request.query)
+        if request.mode == "literal"
+        else _regex_clause(request.query)
+    )
 
-    filters = _build_filters(request.filters)
+    filters = _build_filters(request.filters)  # list[dict[str, object]]
     bool_query: dict[str, Iterable[dict]] = {
         "must": [must_clause],
         "filter": filters,
@@ -36,22 +40,26 @@ def build_search_body(request: SearchRequest) -> dict:
     }
 
 
-def _literal_clause(query: str) -> dict:
+def _literal_clause(query: str) -> dict[str, object]:
     literal = decode_literal_query(query)
     # commands 用は先頭の \ を除いた正規化形を使う
     norm = literal[1:] if literal.startswith("\\") else literal
 
     # 本文は「そのまま」と「\ の有無を反転した形」の両方で should
-    should = [{"match_phrase": {"content": {"query": literal}}}]
+    should: list[dict[str, object]] = [
+        {"match_phrase": {"content": {"query": literal}}}
+    ]
     alt = ("\\" + norm) if not literal.startswith("\\") else norm
     if alt != literal:
         should.append({"match_phrase": {"content": {"query": alt}}})
 
     # commands（完全一致 / 先頭一致）
-    should.extend([
-        {"term": {"commands": norm}},
-        {"match": {"commands.prefix": {"query": norm, "operator": "and"}}},
-    ])
+    should.extend(
+        [
+            {"term": {"commands": norm}},
+            {"match": {"commands.prefix": {"query": norm, "operator": "and"}}},
+        ]
+    )
     return {"bool": {"should": should, "minimum_should_match": 1}}
 
 
@@ -63,15 +71,13 @@ def _regex_clause(pattern: str) -> dict:
 
 
 def is_safe_regex(pattern: str) -> bool:
-    if len(pattern) > 64:
+    if len(pattern) > SAFE_REGEX_MAX_LEN:
         return False
     if pattern.startswith(".*") or pattern.endswith(".*"):
         return False
     if any(char in pattern for char in _SAFE_META_CHARS):
         return False
-    if _UNSAFE_QUANTIFIER.search(pattern):
-        return False
-    return True
+    return not _UNSAFE_QUANTIFIER.search(pattern)
 
 
 def _ngram_clause(pattern: str) -> dict:
@@ -95,21 +101,21 @@ def _highlight_definition() -> dict:
     }
 
 
-def _build_filters(filters: dict[str, str | None]) -> List[dict]:
-    clauses: List[dict] = []
+def _build_filters(filters: dict[str, str | None]) -> list[dict[str, object]]:
+    clauses: list[dict] = []
     for key, value in filters.items():
         if value:
             clauses.append({"term": {key: value}})
     return clauses
 
 
-def _collect_ngrams(pattern: str) -> List[str]:
+def _collect_ngrams(pattern: str) -> list[str]:
     literal = _strip_regex_syntax(pattern)
-    grams: List[str] = []
+    grams: list[str] = []
     for token in literal.split():
         if not token:
             continue
-        if len(token) <= 2:
+        if len(token) <= MIN_TOKEN_LEN:
             grams.append(token)
             continue
         max_len = min(len(token), 15)
@@ -117,18 +123,18 @@ def _collect_ngrams(pattern: str) -> List[str]:
             for start in range(0, len(token) - size + 1):
                 grams.append(token[start : start + size])
     seen = set()
-    unique: List[str] = []
+    unique: list[str] = []
     for gram in grams:
         if gram not in seen:
             seen.add(gram)
             unique.append(gram)
-        if len(unique) >= 20:
+        if len(unique) >= MAX_UNIQUE_GRAMS:
             break
     return unique
 
 
 def _strip_regex_syntax(pattern: str) -> str:
-    result: List[str] = []
+    result: list[str] = []
     escape = False
     for char in pattern:
         if escape:

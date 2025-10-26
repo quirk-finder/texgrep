@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 import time
-from typing import List, Sequence
+from collections.abc import Sequence
 from urllib import parse, request as urllib_request
 
 from django.conf import settings
@@ -33,7 +33,9 @@ def search(request: SearchRequest) -> SearchResponse:
     took_ms = _extract_duration(stats, data, start)
     total = _extract_total(stats, len(hits))
     next_cursor = _build_next_cursor(offset, request.size, total)
-    page = request.page if request.cursor is None else max(offset // request.size + 1, 1)
+    page = (
+        request.page if request.cursor is None else max(offset // request.size + 1, 1)
+    )
     return SearchResponse(
         hits=hits,
         total=total,
@@ -65,8 +67,8 @@ def _process_file_matches(
     base_url: str,
     matches: Sequence[dict],
     request: SearchRequest,
-) -> List[SearchHit]:
-    results: List[SearchHit] = []
+) -> list[SearchHit]:
+    results: list[SearchHit] = []
     max_hits = max(request.size, 0)
     for file_match in matches:
         if max_hits and len(results) >= max_hits:
@@ -83,7 +85,8 @@ def _process_file_matches(
         for raw_line in line_matches:
             if max_hits and len(results) >= max_hits:
                 break
-            line_number = int(raw_line.get("LineNumber", 0) or 0)
+            raw_ln = raw_line.get("LineNumber", 0)
+            line_number = int(raw_ln) if isinstance(raw_ln, (int, str)) else 0
             preview = raw_line.get("Line", "") or ""
             match = _build_match(content, line_number, preview, request)
             if match is None:
@@ -159,7 +162,11 @@ def _offset_for_line(lines: Sequence[str], line_index: int) -> int:
 def _snippet_lines() -> int:
     try:
         return settings.SEARCH_CONFIG["snippet_lines"]
-    except (ImproperlyConfigured, AttributeError, KeyError):  # pragma: no cover - fallback for tests
+    except (
+        ImproperlyConfigured,
+        AttributeError,
+        KeyError,
+    ):  # pragma: no cover - fallback for tests
         return 8
 
 
@@ -174,11 +181,13 @@ def _extract_duration(stats: dict, data: dict, start: float) -> int:
 
 
 def _extract_total(stats: dict, fallback: int) -> int:
-    total = stats.get("MatchCount") or stats.get("FileCount")
-    try:
-        return int(total)
-    except (TypeError, ValueError):  # pragma: no cover - fallback when stats missing
-        return fallback
+    total_raw = stats.get("MatchCount") or stats.get("FileCount")
+    if isinstance(total_raw, (int, str)):
+        try:
+            return int(total_raw)
+        except ValueError:  # pragma: no cover - fallback when stats missing
+            pass
+    return fallback
 
 
 def _http_post(url: str, payload: dict, *, timeout: float = DEFAULT_TIMEOUT) -> dict:
@@ -196,7 +205,9 @@ def _http_post(url: str, payload: dict, *, timeout: float = DEFAULT_TIMEOUT) -> 
     return json.loads(body.decode("utf-8"))
 
 
-def _http_get(url: str, params: dict[str, str], *, timeout: float = DEFAULT_TIMEOUT) -> str:
+def _http_get(
+    url: str, params: dict[str, str], *, timeout: float = DEFAULT_TIMEOUT
+) -> str:
     query = parse.urlencode(params)
     target = f"{url}?{query}" if query else url
     with urllib_request.urlopen(target, timeout=timeout) as response:

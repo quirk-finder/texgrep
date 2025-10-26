@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from celery.schedules import crontab
 from dotenv import load_dotenv
@@ -60,14 +60,14 @@ TEMPLATES = [
 WSGI_APPLICATION = "texgrep.wsgi.application"
 ASGI_APPLICATION = "texgrep.asgi.application"
 
-DATABASES: Dict[str, Dict[str, Any]] = {
+DATABASES: dict[str, dict[str, Any]] = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 
-AUTH_PASSWORD_VALIDATORS = []
+AUTH_PASSWORD_VALIDATORS: list[dict[str, Any]] = []
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"

@@ -9,7 +9,7 @@ import django
 import pytest
 from rest_framework.test import APIClient
 
-import search.views as views
+from search import views
 from search.types import SearchRequest, SearchResponse
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "texgrep.settings")
@@ -59,7 +59,9 @@ def test_literal_search_records_end_to_end_duration(
     _install_provider(monkeypatch, fake_provider, provider_name="opensearch")
     _install_perf_counter(monkeypatch, [1.0, 1.2])
 
-    response = api_client.post("/api/search", {"q": "foo", "mode": "literal"}, format="json")
+    response = api_client.post(
+        "/api/search", {"q": "foo", "mode": "literal"}, format="json"
+    )
 
     assert response.status_code == 200
     data = response.json()
@@ -93,7 +95,9 @@ def test_size_clamped_to_maximum(
 
     def fake_provider(request: SearchRequest) -> SearchResponse:
         seen["request"] = request
-        return SearchResponse(hits=[], total=0, took_provider_ms=1, page=request.page, size=request.size)
+        return SearchResponse(
+            hits=[], total=0, took_provider_ms=1, page=request.page, size=request.size
+        )
 
     _install_provider(monkeypatch, fake_provider, provider_name="opensearch")
     _install_perf_counter(monkeypatch, [5.0, 5.1])
@@ -163,7 +167,9 @@ def test_size_string_zero_is_rejected(
 
     assert response.status_code == 400
     # DRF serializer の min_value バリデーション
-    assert response.json()["size"][0] == "Ensure this value is greater than or equal to 1."
+    assert (
+        response.json()["size"][0] == "Ensure this value is greater than or equal to 1."
+    )
 
 
 def test_reindex_limit_must_be_numeric(

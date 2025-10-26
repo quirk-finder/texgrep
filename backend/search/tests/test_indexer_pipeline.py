@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from indexer.pipeline import collect_records
+
 from search.query import parse_payload
 from search.service import get_inmemory_service
-
-from indexer.pipeline import collect_records
 
 
 def test_commands_are_searchable(tmp_path: Path) -> None:
@@ -25,8 +25,9 @@ def test_commands_are_searchable(tmp_path: Path) -> None:
     assert "\\triple" in record.commands
     assert "\\iiint" in record.commands
 
-    service = get_inmemory_service()
     from search.types import IndexDocument
+
+    service = get_inmemory_service()
 
     service.index_documents(
         [
@@ -47,6 +48,8 @@ def test_commands_are_searchable(tmp_path: Path) -> None:
     assert response.total == 1
     assert response.hits[0].line == 2
 
-    response_double = service.search(parse_payload({"q": r"\\iiint", "mode": "literal"}))
+    response_double = service.search(
+        parse_payload({"q": r"\\iiint", "mode": "literal"})
+    )
     assert response_double.total == 1
-    assert any("\\iiint" in hit.snippet for hit in response_double.hits)
+    assert any("\\iiint" in (hit.snippet or "") for hit in response_double.hits)

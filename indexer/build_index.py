@@ -12,7 +12,9 @@ from .fetch_samples import SampleFile, fetch_samples
 from .preprocess import preprocess_file
 
 
-def build_index(service: SearchService, *, source: str, limit: int | None = None) -> List[IndexDocument]:
+def build_index(
+    service: SearchService, *, source: str, limit: int | None = None
+) -> List[IndexDocument]:
     with tempfile.TemporaryDirectory() as tmpdir:
         workspace = Path(tmpdir)
         if source == "samples":
@@ -52,7 +54,7 @@ def _preprocess(samples: Iterable[SampleFile]) -> List[IndexDocument]:
         processed = preprocess_file(sample.path)
         cmds = _normalize_commands(processed.commands or [])
         if not cmds:
-            extracted = sorted(set(re.findall(r'\\[A-Za-z]+', processed.content)))
+            extracted = sorted(set(re.findall(r"\\[A-Za-z]+", processed.content)))
             cmds = _normalize_commands(extracted)
         documents.append(
             IndexDocument(

@@ -9,6 +9,7 @@ from .preprocess import preprocess_file
 
 StrPath = Union[str, Path]
 
+
 @dataclass(slots=True)
 class IndexRecord:
     file_id: str

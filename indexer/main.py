@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import argparse
 import os
-import re
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 from typing import Iterable, List
 
@@ -14,14 +12,18 @@ from .pipeline import IndexRecord, collect_records, ensure_root
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build search indexes for TeX sources")
-    parser.add_argument("--input", required=True, type=Path, help="Path to the corpus root")
+    parser.add_argument(
+        "--input", required=True, type=Path, help="Path to the corpus root"
+    )
     parser.add_argument(
         "--provider",
         required=True,
         choices=["opensearch", "zoekt"],
         help="Index provider to target",
     )
-    parser.add_argument("--limit", type=int, default=None, help="Optional limit on files")
+    parser.add_argument(
+        "--limit", type=int, default=None, help="Optional limit on files"
+    )
     parser.add_argument(
         "--corpus",
         type=str,
@@ -50,6 +52,7 @@ def main() -> None:
 def index_with_opensearch(records: Iterable[IndexRecord]) -> None:
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "texgrep.settings")
     import django
+
     django.setup()
 
     from search.service import SearchService
@@ -69,7 +72,7 @@ def index_with_opensearch(records: Iterable[IndexRecord]) -> None:
                 year=record.year,
                 source=record.source or "samples",
                 content=record.content,
-                commands=normalized_cmds,   # ★ ここを差し替え
+                commands=normalized_cmds,  # ★ ここを差し替え
                 line_offsets=record.line_offsets,
             )
         )
@@ -79,7 +82,9 @@ def index_with_opensearch(records: Iterable[IndexRecord]) -> None:
     service.index_documents(documents)
 
 
-def index_with_zoekt(records: Iterable[IndexRecord], *, corpus: str, root: Path) -> None:
+def index_with_zoekt(
+    records: Iterable[IndexRecord], *, corpus: str, root: Path
+) -> None:
     zoekt_index = shutil.which("zoekt-index")
     if not zoekt_index:
         raise RuntimeError("zoekt-index executable not found in PATH")
@@ -117,7 +122,9 @@ def _ensure_git_repo(path: Path) -> None:
     _git(path, ["config", "user.name", "TexGrep Indexer"])
 
 
-def _git(path: Path, args: List[str], capture_output: bool = False, check: bool = True) -> str:
+def _git(
+    path: Path, args: List[str], capture_output: bool = False, check: bool = True
+) -> str:
     result = subprocess.run(
         ["git", *args],
         cwd=path,

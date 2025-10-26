@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from indexer.build_index import build_index
+
 from search.query import parse_payload
 from search.service import get_inmemory_service
-
-from indexer.build_index import build_index
 
 
 def test_ingest_and_search_samples():
@@ -17,6 +17,10 @@ def test_ingest_and_search_samples():
     assert any("<mark>\\newcommand" in hit.snippet for hit in response.hits)
     assert any(
         hit.blocks
-        and any("<mark>\\newcommand" in getattr(block, "html", "") for block in hit.blocks if block.kind == "text")
+        and any(
+            "<mark>\\newcommand" in getattr(block, "html", "")
+            for block in hit.blocks
+            if block.kind == "text"
+        )
         for hit in response.hits
     )

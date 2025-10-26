@@ -1,18 +1,11 @@
 from __future__ import annotations
+
 import time
 
+from django_ratelimit.decorators import ratelimit
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-
-try:
-    from django_ratelimit.decorators import ratelimit as _ratelimit
-    USING_EMBEDDED_RATELIMIT = False
-except Exception:
-    from .ratelimit import ratelimit as _ratelimit
-    USING_EMBEDDED_RATELIMIT = True
-
-ratelimit = _ratelimit
 
 from .providers import get_provider, get_provider_name
 from .serializers import SearchRequestSerializer, SearchResponseSerializer
@@ -52,7 +45,9 @@ def search_view(request):  # type: ignore[override]
 def reindex_view(request):  # type: ignore[override]
     source = request.data.get("source", "samples")
     if source not in {"samples", "arxiv"}:
-        return Response({"detail": "Unknown source"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"detail": "Unknown source"}, status=status.HTTP_400_BAD_REQUEST
+        )
     limit_value = request.data.get("limit")
     if limit_value is not None:
         try:
@@ -70,4 +65,6 @@ def reindex_view(request):  # type: ignore[override]
     else:
         limit = None
     task = reindex_task.delay(source=source, limit=limit)
-    return Response({"task_id": task.id, "status": "queued"}, status=status.HTTP_202_ACCEPTED)
+    return Response(
+        {"task_id": task.id, "status": "queued"}, status=status.HTTP_202_ACCEPTED
+    )

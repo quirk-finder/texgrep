@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable
+from typing import Any
 
 from django.core.cache import cache
 from django.http import JsonResponse
@@ -15,7 +16,9 @@ _PERIOD_SECONDS = {
 }
 
 
-def ratelimit(key: str, rate: str, block: bool = False) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+def ratelimit(
+    key: str, rate: str, block: bool = False
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     limit, window = _parse_rate(rate)
 
     def decorator(view_func: Callable[..., Any]) -> Callable[..., Any]:

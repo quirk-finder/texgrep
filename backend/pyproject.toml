@@ -37,3 +37,86 @@ dev = [
 
 [tool.setuptools]
 packages = ["texgrep", "search"]
+
+[tool.black]
+line-length = 140
+target-version = ["py310"]
+extend-exclude = '''
+(
+  ^\.venv/
+| ^build/
+| ^dist/
+| ^.*/migrations/
+)
+'''
+
+[tool.ruff]
+target-version = "py310"
+line-length = 140
+
+[tool.ruff.lint]
+select = ["E","F","I","W","UP","B","ISC","PL","SIM","RUF"]
+ignore = ["RUF003","E501"]   # 全角カッコ／長行は黙認
+
+[tool.ruff.lint.per-file-ignores]
+# pyproject が backend/ にあるので、ここからの相対パスで指定する
+"search/tests/**" = ["PLR2004","PLC0415","RUF003"]
+"search/providers/__init__.py" = ["PLC0415"]   # 動的 import を許容するなら
+"manage.py" = ["PLC0415"]
+"search/query.py" = ["PLR0912"]                 # まずは抑制（余裕があれば後で関数分割）
+"search/snippets.py" = ["PLR0912","PLR0915"]    # 同上
+
+[tool.ruff.format]
+quote-style = "preserve"
+
+[tool.ruff.lint.isort]
+# Black 互換の設定（デフォでOKだが明示）
+combine-as-imports = true
+force-single-line = false
+
+[tool.mypy]
+python_version = "3.10"
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+mypy_path = ["backend"]
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unused_configs = true
+strict_optional = true
+# 段階的に上げる:
+disallow_untyped_defs = false
+follow_imports = "silent"
+
+[tool.django-stubs]
+django_settings_module = "texgrep.settings"
+
+[tool.coverage.run]
+branch = true
+source = [
+  "backend/search",
+  "indexer",
+]
+omit = [
+  # 実行時に関与しないスクリプト/エントリポイント
+  "backend/manage.py",
+  "backend/texgrep/asgi.py",
+  "backend/texgrep/wsgi.py",
+  "backend/search/management/*",
+  "indexer/main.py",
+  # マイグレーション等
+  "*/migrations/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+# まずは現実的なラインに。対象を絞ったら徐々に引き上げるのが◎
+fail_under = 80
+
+# あるある除外（型用/未実装等）
+exclude_also = [
+  "pragma: no cover",
+  "if TYPE_CHECKING:",
+  "raise NotImplementedError",
+  "def __repr__",
+]

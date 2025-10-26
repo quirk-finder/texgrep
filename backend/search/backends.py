@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from typing import Iterable, List, Sequence
+from collections.abc import Iterable, Sequence
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -29,7 +29,9 @@ class SearchBackendProtocol:
 
 
 class OpenSearchBackend(SearchBackendProtocol):
-    def __init__(self, client: OpenSearch | None = None, index_name: str | None = None) -> None:
+    def __init__(
+        self, client: OpenSearch | None = None, index_name: str | None = None
+    ) -> None:
         self.client = client or opensearch_client.create_client()
         self.index_name = index_name or settings.OPENSEARCH_INDEX
 
@@ -75,7 +77,11 @@ class OpenSearchBackend(SearchBackendProtocol):
         total = int(response.get("hits", {}).get("total", {}).get("value", 0))
         took_ms = int(response.get("took", 0))
         next_cursor = _build_next_cursor(offset, request.size, total)
-        page = request.page if request.cursor is None else max(offset // request.size + 1, 1)
+        page = (
+            request.page
+            if request.cursor is None
+            else max(offset // request.size + 1, 1)
+        )
         return SearchResponse(
             hits=hits,
             total=total,
@@ -102,12 +108,12 @@ class InMemorySearchBackend(SearchBackendProtocol):
 
     def search(self, request: SearchRequest) -> SearchResponse:
         start_time = time.monotonic()
-        matches: List[SearchHit] = []
+        matches: list[SearchHit] = []
         for doc in self._documents.values():
             if not _filters_match(request, doc):
                 continue
             match = find_match(doc.content, request)
-            if not match:
+            if match is None:
                 continue
             snippet = build_snippet(
                 doc.content,
@@ -134,7 +140,11 @@ class InMemorySearchBackend(SearchBackendProtocol):
         slice_hits = matches[start:end]
         took_ms = int((time.monotonic() - start_time) * 1000)
         next_cursor = _build_next_cursor(offset, request.size, len(matches))
-        page = request.page if request.cursor is None else max(offset // request.size + 1, 1)
+        page = (
+            request.page
+            if request.cursor is None
+            else max(offset // request.size + 1, 1)
+        )
         return SearchResponse(
             hits=slice_hits,
             total=len(matches),
@@ -145,15 +155,19 @@ class InMemorySearchBackend(SearchBackendProtocol):
         )
 
 
-def _process_hits(raw_hits: Sequence[dict], request: SearchRequest) -> List[SearchHit]:
-    results: List[SearchHit] = []
+def _process_hits(raw_hits: Sequence[dict], request: SearchRequest) -> list[SearchHit]:
+    results: list[SearchHit] = []
     for raw in raw_hits:
         source = raw.get("_source", {})
         content = source.get("content", "")
         match = find_match(content, request)
         # 1st fallback: \ の有無を反転して再トライ（literal のときだけ）
-        if not match and request.mode == "literal":
-            alt_q = request.query[1:] if request.query.startswith("\\") else "\\" + request.query
+        if match is None and request.mode == "literal":
+            alt_q = (
+                request.query[1:]
+                if request.query.startswith("\\")
+                else "\\" + request.query
+            )
             alt_req = SearchRequest(
                 query=alt_q,
                 mode=request.mode,
@@ -164,10 +178,7 @@ def _process_hits(raw_hits: Sequence[dict], request: SearchRequest) -> List[Sear
             match = find_match(content, alt_req)
 
         # 2nd fallback: それでも見つからなければ結果は捨てず、素朴スニペットを返す
-        simple_fallback = False
-        if not match:
-            simple_fallback = True
-        if not simple_fallback:
+        if match is not None:
             snippet_obj = build_snippet(
                 content,
                 match,
@@ -204,9 +215,7 @@ def _process_hits(raw_hits: Sequence[dict], request: SearchRequest) -> List[Sear
 def _index_definition() -> dict:
     return {
         "settings": {
-            "index": {
-                "max_ngram_diff": 20
-            },
+            "index": {"max_ngram_diff": 20},
             "analysis": {
                 "tokenizer": {
                     "tex_tokenizer": {
@@ -229,9 +238,7 @@ def _index_definition() -> dict:
                     "tex_command_capture": {
                         "type": "pattern_capture",
                         "preserve_original": True,
-                        "patterns": [
-                            r"\\\\([A-Za-z]+\\*?)"  # \iiint, \foo*
-                        ],
+                        "patterns": [r"\\\\([A-Za-z]+\\*?)"],  # \iiint, \foo*
                     },
                 },
                 "analyzer": {
@@ -252,7 +259,7 @@ def _index_definition() -> dict:
                         "filter": ["tex_ngram"],
                     },
                 },
-            }
+            },
         },
         "mappings": {
             "properties": {
@@ -287,16 +294,12 @@ def _index_definition() -> dict:
     }
 
 
-
-
 def _filters_match(request: SearchRequest, doc: IndexDocument) -> bool:
     year = doc.year or ""
     source = doc.source or ""
     if request.filters.get("year") and request.filters["year"] != year:
         return False
-    if request.filters.get("source") and request.filters["source"] != source:
-        return False
-    return True
+    return not (request.filters.get("source") and request.filters["source"] != source)
 
 
 def get_index_definition() -> dict:
@@ -320,7 +323,11 @@ def _resolve_line_number(line_offsets: Iterable[int] | None, match_line: int) ->
 def _snippet_lines() -> int:
     try:
         return settings.SEARCH_CONFIG["snippet_lines"]
-    except (ImproperlyConfigured, AttributeError, KeyError):  # pragma: no cover - fallback for tests
+    except (
+        ImproperlyConfigured,
+        AttributeError,
+        KeyError,
+    ):  # pragma: no cover - fallback for tests
         return 8
 
 
