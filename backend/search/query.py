@@ -38,8 +38,15 @@ def parse_payload(payload: dict[str, Any]) -> SearchRequest:
     if mode not in ("literal", "regex"):
         raise QueryValidationError("Unknown mode")
 
-    page = int(payload.get("page") or 1)
-    size = int(payload.get("size") or DEFAULT_PAGE_SIZE)
+    try:
+        page = int(payload.get("page") or 1)
+    except (TypeError, ValueError) as exc:
+        raise QueryValidationError("Page must be an integer") from exc
+
+    try:
+        size = int(payload.get("size") or DEFAULT_PAGE_SIZE)
+    except (TypeError, ValueError) as exc:
+        raise QueryValidationError("Page size must be an integer") from exc
     if page < 1:
         raise QueryValidationError("Page must be >= 1")
     if size < 1:
