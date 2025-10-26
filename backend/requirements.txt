@@ -4,6 +4,7 @@ uvicorn[standard]>=0.30
 opensearch-py>=2.6
 celery>=5.3
 redis>=5.0
+httpx>=0.27
 pydantic>=2.5
 typing_extensions>=4.10; python_version < "3.11"
 tomli>=2.0.1; python_version < "3.11"

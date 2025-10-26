@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict
 
+from celery.schedules import crontab
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -92,6 +93,12 @@ CELERY_BROKER_URL = os.environ.get("REDIS_URL", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_TASK_ROUTES = {"search.tasks.reindex_task": {"queue": "index"}}
 CELERY_TASK_TIME_LIMIT = 600
+CELERY_BEAT_SCHEDULE = {
+    "daily_refresh": {
+        "task": "search.tasks.daily_refresh",
+        "schedule": crontab(hour=3, minute=0),
+    }
+}
 
 SEARCH_CONFIG = {
     "snippet_lines": int(os.environ.get("SEARCH_SNIPPET_LINES", "8")),
