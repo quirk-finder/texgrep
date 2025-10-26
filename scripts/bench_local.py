@@ -225,10 +225,14 @@ def run_benchmark(
     concurrency: int,
     timeout: float,
     rng: random.Random,
+    provider: str | None = None,
 ) -> BenchmarkResult:
+    # OpenSearch では regex 検索を受け付けないため、Zoekt 以外は literal のみを使う
+    seeds = SEED_QUERIES if (provider and provider.lower() == "zoekt") \
+        else [s for s in SEED_QUERIES if s[1] == "literal"]
     payloads = []
     for _ in range(total_requests):
-        query, mode = rng.choice(SEED_QUERIES)
+        query, mode = rng.choice(seeds)
         payloads.append({"q": query, "mode": mode, "filters": {"source": "samples"}})
 
     start = time.perf_counter()
@@ -306,6 +310,7 @@ def main() -> None:
         concurrency=args.concurrency,
         timeout=args.timeout,
         rng=rng,
+        provider=args.provider,
     )
 
     output = {
