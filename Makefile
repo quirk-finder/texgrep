@@ -12,7 +12,7 @@ INDEX_INPUT    ?= /app/indexer/sample_corpus
 # 起動するサービス（必要ならここで増減）
 SERVICES ?= backend frontend opensearch redis
 
-.PHONY: help up down restart ps logs backend-sh frontend-sh shell reindex fmt test bench
+.PHONY: help up down restart ps logs backend-sh frontend-sh shell reindex fmt test bench beat-once
 
 help:
 	@echo "make up           - build & start $(SERVICES)"
@@ -26,6 +26,7 @@ help:
 	@echo "make reindex      - index from $(INDEX_INPUT) (provider=$(INDEX_PROVIDER))"
 	@echo "                   e.g. make reindex INDEX_INPUT=/app/data/samples"
 	@echo "make fmt/test/bench - code tasks"
+	@echo "make beat-once    - run celery beat once"
 
 up:
 	$(COMPOSE) up -d --build $(SERVICES)
@@ -64,6 +65,9 @@ test:
 
 bench:
 	$(COMPOSE) exec backend python scripts/bench_local.py
+
+beat-once:
+	$(COMPOSE) exec backend celery -A texgrep beat --loglevel info --run-once --schedule /tmp/celerybeat-schedule
 
 # 追加
 restart-backend:

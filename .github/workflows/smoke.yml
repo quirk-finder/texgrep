@@ -1,0 +1,48 @@
+name: Smoke Test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up environment file
+        run: |
+          cat <<'ENV' > .env
+          DJANGO_SECRET_KEY=ci
+          DJANGO_DEBUG=0
+          ENV
+
+      - name: Start services
+        run: |
+          docker compose -f deploy/docker-compose.yml --env-file .env up -d redis opensearch backend
+
+      - name: Wait for backend health
+        run: |
+          for i in {1..60}; do
+            if docker compose -f deploy/docker-compose.yml --env-file .env exec -T backend curl -fsS http://localhost:8000/api/health > /dev/null; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Backend did not become healthy in time" >&2
+          docker compose -f deploy/docker-compose.yml --env-file .env logs backend
+          exit 1
+
+      - name: Run latency smoke benchmark
+        run: |
+          docker compose -f deploy/docker-compose.yml --env-file .env run --rm backend \
+            python scripts/bench_local.py --requests 20 --concurrency 8 --max-error-rate 0 --max-p95 800 --provider opensearch --base-url http://backend:8000
+
+      - name: Teardown
+        if: always()
+        run: |
+          docker compose -f deploy/docker-compose.yml --env-file .env down
