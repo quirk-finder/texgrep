@@ -52,8 +52,8 @@ def index_with_opensearch(records: Iterable[IndexRecord]) -> None:
     import django
     django.setup()
 
-    from backend.search.service import SearchService
-    from backend.search.types import IndexDocument
+    from search.service import SearchService
+    from search.types import IndexDocument
 
     documents: List[IndexDocument] = []
     for record in records:

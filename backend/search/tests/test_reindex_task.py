@@ -6,7 +6,7 @@ from typing import Iterable
 
 import pytest
 
-from backend.search.tasks import reindex_task
+from search.tasks import reindex_task
 from indexer.fetch_samples import SampleFile
 from search.backends import SearchBackendProtocol
 from search.query import decode_literal_query, parse_payload

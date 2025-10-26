@@ -26,7 +26,7 @@ def test_commands_are_searchable(tmp_path: Path) -> None:
     assert "\\iiint" in record.commands
 
     service = get_inmemory_service()
-    from backend.search.types import IndexDocument
+    from search.types import IndexDocument
 
     service.index_documents(
         [
