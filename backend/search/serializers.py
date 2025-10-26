@@ -46,7 +46,7 @@ class SearchHitSerializer(serializers.Serializer):
     path = serializers.CharField()
     line = serializers.IntegerField()
     snippet = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    url = serializers.CharField()
+    url = serializers.CharField(allow_blank=True, required=False, default="")
     blocks = SnippetBlockSerializer(many=True, required=False)
 
 

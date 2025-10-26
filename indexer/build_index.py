@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import tempfile
 from pathlib import Path
 from typing import Iterable, List
@@ -31,6 +32,9 @@ def _preprocess(samples: Iterable[SampleFile]) -> List[IndexDocument]:
     documents: List[IndexDocument] = []
     for sample in samples:
         processed = preprocess_file(sample.path)
+        cmds = list(processed.commands or [])
+        if not cmds:
+            cmds = sorted(set(re.findall(r'\\([A-Za-z]+)', processed.content)))
         documents.append(
             IndexDocument(
                 file_id=sample.file_id,
@@ -39,7 +43,8 @@ def _preprocess(samples: Iterable[SampleFile]) -> List[IndexDocument]:
                 year=sample.year,
                 source=sample.source,
                 content=processed.content,
-                commands=processed.commands,
+                commands=cmds,
+                line_offsets=processed.line_offsets,
             )
         )
     return documents

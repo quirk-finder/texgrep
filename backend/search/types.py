@@ -41,7 +41,7 @@ class SearchHit:
     file_id: str
     path: str
     line: int
-    url: str
+    url: str = ""
     snippet: Optional[str] = None
     blocks: Optional[List[SnippetBlock]] = None
 
@@ -62,3 +62,4 @@ class IndexDocument:
     source: Optional[str]
     content: str
     commands: Optional[Iterable[str]] = None
+    line_offsets: Optional[List[int]] = None

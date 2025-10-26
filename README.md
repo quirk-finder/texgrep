@@ -54,7 +54,7 @@ Common targets in the provided `Makefile`:
 | --- | --- |
 | `make up` | Build and start all containers (backend, worker, frontend, OpenSearch, Redis) |
 | `make down` | Stop the stack |
-| `make reindex` | Run `python manage.py tex_reindex --source samples --limit 100` inside the backend container |
+| `make reindex` | Rebuild the search index from `data/samples` using the configured provider |
 | `make web` | Start Django development server (useful for debugging) |
 | `make test` | Run backend pytest suite |
 | `make bench` | Execute the local latency benchmark script against the running API |
@@ -177,7 +177,7 @@ python manage.py create_tex_index
 A synchronous management command is available:
 
 ```bash
-python manage.py tex_reindex --source samples --limit 100
+python -m indexer.main --input data/samples --provider opensearch
 ```
 
 ## Frontend
