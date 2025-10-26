@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
-import { SearchFilters, SearchHit, SearchMode, searchTex } from './api';
+import { SearchFilters, SearchHit, SearchMode, searchTex, SearchRequest, SearchResponse } from './api';
 import { ResultList } from './components/ResultList';
 import { SearchForm } from './components/SearchForm';
 import { useDebouncedValue } from './hooks/useDebouncedValue';
@@ -26,12 +26,13 @@ export default function App() {
   const [filters, setFilters] = useState<SearchFilters>(DEFAULT_FILTERS);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  const provider = import.meta.env.VITE_PROVIDER ?? 'unknown';
+  const providerRaw = import.meta.env.VITE_PROVIDER ?? 'unknown';
+  const provider = providerRaw.toString().trim().toLowerCase();
   const regexEnabled = provider === 'zoekt';
 
   const debouncedQuery = useDebouncedValue(query.trim());
   const PAGE_SIZE = 20;
-  const requestPayload = useMemo(() => {
+  const requestPayload = useMemo<SearchRequest | undefined>(() => {
     if (!debouncedQuery) return undefined;
     return { q: debouncedQuery, mode, filters, size: PAGE_SIZE };
   }, [debouncedQuery, mode, filters]);

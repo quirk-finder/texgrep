@@ -102,7 +102,7 @@ export function SearchForm({
         <div className="ml-auto flex flex-col items-end gap-1 text-xs uppercase tracking-wide text-slate-500">
           <div className="flex gap-3">
             <span>Total: {total ?? '–'}</span>
-            <span>End-to-end: {tookEndToEndMs !== undefined ? `${tookEndToEndMs} ms` : '–'}</span>
+            <span>End-to-end: {typeof tookEndToEndMs === 'number' ? `${Math.round(tookEndToEndMs)} ms` : '–'}</span>
           </div>
           <p>
             ⌘K focus · {regexEnabled ? 'Alt+R regex' : 'Alt+R regex (Zoekt only)'} · j/k move
