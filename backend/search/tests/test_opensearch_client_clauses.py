@@ -32,6 +32,10 @@ def test_literal_clause_should_variants(query, expected_norm, expected_alt):
         ("abc", True),
         ("a+", False),  # unsafe quantifier should be rejected
         ("a" * 65, False),  # overly long patterns are rejected early
+        (".*abc", False),  # leading wildcard rejected
+        ("abc.*", False),  # trailing wildcard rejected
+        ("a|b", False),  # alternation rejected
+        ("[ab]", False),  # character class rejected
     ],
 )
 def test_is_safe_regex_variants(pattern, expected):
@@ -106,4 +110,40 @@ def test_build_search_body_uses_ngram_clause_for_unsafe_regex():
 
     filters = body["query"]["bool"]["filter"]
     assert filters == [{"term": {"source": "samples"}}]
+
+
+def test_build_search_body_filters_out_empty_values():
+    request = SearchRequest(
+        query="literal",
+        mode="literal",
+        filters={"source": "samples", "year": None},
+        page=1,
+        size=5,
+    )
+
+    body = build_search_body(request)
+
+    filters = body["query"]["bool"]["filter"]
+    assert filters == [{"term": {"source": "samples"}}]
+
+
+def test_build_search_body_ngram_fallback_for_meta_regex():
+    request = SearchRequest(
+        query="a|b",
+        mode="regex",
+        filters={},
+        page=1,
+        size=5,
+    )
+
+    body = build_search_body(request)
+
+    must_clause = body["query"]["bool"]["must"][0]
+    terms = must_clause["bool"]["must"]
+    assert {"term": {"content.ngram": "a"}} in terms
+    assert {"term": {"content.ngram": "b"}} in terms
+
+    highlight = body["highlight"]
+    assert highlight["fields"]["content"]["type"] == "fvh"
+    assert highlight["fields"]["content"]["number_of_fragments"] == 0
 

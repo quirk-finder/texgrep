@@ -5,6 +5,7 @@ import types
 import itertools
 from typing import Any, cast
 
+import pytest
 from django.core.cache import cache
 from django.http import JsonResponse
 from django.test import Client, override_settings
@@ -126,3 +127,44 @@ def test_ratelimit_falls_back_to_ip_when_header_missing() -> None:
     finally:
         sys.modules.pop(module_name, None)
         cache.clear()
+
+
+def test_ratelimit_header_key_skips_when_header_missing() -> None:
+    cache.clear()
+    client = Client()
+
+    @ratelimit(key="header:X-Api-Key", rate="1/m", block=True)
+    def limited_view(request):  # type: ignore[no-untyped-def]
+        return JsonResponse({"status": "ok"})
+
+    module_name = _register_view(limited_view)
+
+    try:
+        with override_settings(ROOT_URLCONF=module_name):
+            first = client.get("/limited/", REMOTE_ADDR="10.0.0.4")
+            assert first.status_code == 200
+
+            second = client.get("/limited/", REMOTE_ADDR="10.0.0.4")
+            assert second.status_code == 200
+
+            third = client.get(
+                "/limited/",
+                REMOTE_ADDR="10.0.0.4",
+                HTTP_X_API_KEY="token-one, token-two",
+            )
+            assert third.status_code == 200
+
+            fourth = client.get(
+                "/limited/",
+                REMOTE_ADDR="10.0.0.4",
+                HTTP_X_API_KEY="token-one",
+            )
+            assert fourth.status_code == 429
+    finally:
+        sys.modules.pop(module_name, None)
+        cache.clear()
+
+
+def test_ratelimit_invalid_rate_raises_value_error() -> None:
+    with pytest.raises(ValueError):
+        ratelimit(key="ip", rate="oops")
