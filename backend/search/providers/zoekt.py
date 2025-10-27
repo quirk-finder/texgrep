@@ -26,8 +26,8 @@ def search(request: SearchRequest) -> SearchResponse:
     offset = _resolve_offset(request)
     payload = _build_query_payload(request, offset)
     data = _http_post(search_url, payload)
-    stats = data.get("Stats", {}) or {}
-    file_matches: Sequence[dict] = data.get("FileMatches", []) or []
+    stats: dict[str, object] = data.get("Stats", {}) or {}
+    file_matches: Sequence[dict[str, object]] = data.get("FileMatches", []) or []
     hits = _process_file_matches(base_url, file_matches, request)
 
     took_ms = _extract_duration(stats, data, start)
@@ -46,7 +46,7 @@ def search(request: SearchRequest) -> SearchResponse:
     )
 
 
-def _build_query_payload(request: SearchRequest, offset: int) -> dict:
+def _build_query_payload(request: SearchRequest, offset: int) -> dict[str, object]:
     literal = decode_literal_query(request.query)
     size = request.size
     query: dict[str, object] = {
@@ -65,7 +65,7 @@ def _build_query_payload(request: SearchRequest, offset: int) -> dict:
 
 def _process_file_matches(
     base_url: str,
-    matches: Sequence[dict],
+    matches: Sequence[dict[str, object]],
     request: SearchRequest,
 ) -> list[SearchHit]:
     results: list[SearchHit] = []
@@ -76,18 +76,18 @@ def _process_file_matches(
         content = _extract_content(base_url, file_match)
         if content is None:
             continue
-        path = file_match.get("FileName", "") or ""
-        repository = file_match.get("Repository", "") or ""
+        path = str(file_match.get("FileName", "") or "")
+        repository = str(file_match.get("Repository", "") or "")
         checksum = file_match.get("Checksum")
         file_id = checksum or f"{repository}:{path}" if repository else path
-        url = file_match.get("URL", "") or ""
-        line_matches = file_match.get("LineMatches", []) or []
+        url = str(file_match.get("URL", "") or "")
+        line_matches: Sequence[dict[str, object]] = file_match.get("LineMatches", []) or []
         for raw_line in line_matches:
             if max_hits and len(results) >= max_hits:
                 break
             raw_ln = raw_line.get("LineNumber", 0)
             line_number = int(raw_ln) if isinstance(raw_ln, (int, str)) else 0
-            preview = raw_line.get("Line", "") or ""
+            preview = str(raw_line.get("Line", "") or "")
             match = _build_match(content, line_number, preview, request)
             if match is None:
                 continue
@@ -111,7 +111,7 @@ def _process_file_matches(
     return results
 
 
-def _extract_content(base_url: str, file_match: dict) -> str | None:
+def _extract_content(base_url: str, file_match: dict[str, object]) -> str | None:
     content = file_match.get("Content")
     if isinstance(content, str):
         return content
@@ -121,7 +121,7 @@ def _extract_content(base_url: str, file_match: dict) -> str | None:
         return None
     return _http_get(
         f"{base_url}/api/file",
-        params={"Repository": repository, "File": path},
+        params={"Repository": str(repository), "File": str(path)},
     )
 
 
@@ -170,7 +170,9 @@ def _snippet_lines() -> int:
         return 8
 
 
-def _extract_duration(stats: dict, data: dict, start: float) -> int:
+def _extract_duration(
+    stats: dict[str, object], data: dict[str, object], start: float
+) -> int:
     duration = stats.get("Duration") or data.get("Duration")
     if duration is not None:
         try:
@@ -180,7 +182,7 @@ def _extract_duration(stats: dict, data: dict, start: float) -> int:
     return int((time.monotonic() - start) * 1000)
 
 
-def _extract_total(stats: dict, fallback: int) -> int:
+def _extract_total(stats: dict[str, object], fallback: int) -> int:
     total_raw = stats.get("MatchCount") or stats.get("FileCount")
     if isinstance(total_raw, (int, str)):
         try:
@@ -190,7 +192,9 @@ def _extract_total(stats: dict, fallback: int) -> int:
     return fallback
 
 
-def _http_post(url: str, payload: dict, *, timeout: float = DEFAULT_TIMEOUT) -> dict:
+def _http_post(
+    url: str, payload: dict[str, object], *, timeout: float = DEFAULT_TIMEOUT
+) -> dict[str, object]:
     data = json.dumps(payload).encode("utf-8")
     request_obj = urllib_request.Request(
         url,

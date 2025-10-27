@@ -60,3 +60,22 @@ jobs:
         if: always()
         run: |
           docker compose -f deploy/docker-compose.yml --env-file .env down
+
+  pytest-warnings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install backend dependencies
+        run: pip install -e backend[dev]
+
+      - name: Run pytest with warnings as errors
+        run: |
+          cd backend
+          PYTHONPATH=backend pytest -q -W error::DeprecationWarning

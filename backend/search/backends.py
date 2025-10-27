@@ -74,6 +74,8 @@ class OpenSearchBackend(SearchBackendProtocol):
             request_timeout=PROVIDER_REQUEST_TIMEOUT,
         )
         hits = _process_hits(response.get("hits", {}).get("hits", []), request)
+        if len(hits) > request.size:
+            hits = hits[: request.size]
         total = int(response.get("hits", {}).get("total", {}).get("value", 0))
         took_ms = int(response.get("took", 0))
         next_cursor = _build_next_cursor(offset, request.size, total)
@@ -155,10 +157,12 @@ class InMemorySearchBackend(SearchBackendProtocol):
         )
 
 
-def _process_hits(raw_hits: Sequence[dict], request: SearchRequest) -> list[SearchHit]:
+def _process_hits(
+    raw_hits: Sequence[dict[str, object]], request: SearchRequest
+) -> list[SearchHit]:
     results: list[SearchHit] = []
     for raw in raw_hits:
-        source = raw.get("_source", {})
+        source = raw.get("_source", {}) or {}
         content = source.get("content", "")
         match = find_match(content, request)
         # 1st fallback: \ の有無を反転して再トライ（literal のときだけ）
@@ -212,7 +216,7 @@ def _process_hits(raw_hits: Sequence[dict], request: SearchRequest) -> list[Sear
     return results
 
 
-def _index_definition() -> dict:
+def _index_definition() -> dict[str, object]:
     return {
         "settings": {
             "index": {"max_ngram_diff": 20},
@@ -302,7 +306,7 @@ def _filters_match(request: SearchRequest, doc: IndexDocument) -> bool:
     return not (request.filters.get("source") and request.filters["source"] != source)
 
 
-def get_index_definition() -> dict:
+def get_index_definition() -> dict[str, object]:
     definition = _index_definition()
     definition["mappings"]["properties"]["line_offsets"] = {"type": "integer"}
     return definition

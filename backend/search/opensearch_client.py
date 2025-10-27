@@ -63,7 +63,7 @@ def _literal_clause(query: str) -> dict[str, object]:
     return {"bool": {"should": should, "minimum_should_match": 1}}
 
 
-def _regex_clause(pattern: str) -> dict:
+def _regex_clause(pattern: str) -> dict[str, object]:
     decoded = decode_regex_query(pattern)
     if is_safe_regex(decoded):
         return {"regexp": {"content": {"value": decoded}}}
@@ -80,7 +80,7 @@ def is_safe_regex(pattern: str) -> bool:
     return not _UNSAFE_QUANTIFIER.search(pattern)
 
 
-def _ngram_clause(pattern: str) -> dict:
+def _ngram_clause(pattern: str) -> dict[str, object]:
     grams = _collect_ngrams(pattern)
     if not grams:
         return {"match_all": {}}
@@ -88,7 +88,7 @@ def _ngram_clause(pattern: str) -> dict:
     return {"bool": {"must": must_terms}}
 
 
-def _highlight_definition() -> dict:
+def _highlight_definition() -> dict[str, object]:
     return {
         "pre_tags": ["<mark>"],
         "post_tags": ["</mark>"],
@@ -102,7 +102,7 @@ def _highlight_definition() -> dict:
 
 
 def _build_filters(filters: dict[str, str | None]) -> list[dict[str, object]]:
-    clauses: list[dict] = []
+    clauses: list[dict[str, object]] = []
     for key, value in filters.items():
         if value:
             clauses.append({"term": {key: value}})
@@ -122,7 +122,7 @@ def _collect_ngrams(pattern: str) -> list[str]:
         for size in range(2, max_len + 1):
             for start in range(0, len(token) - size + 1):
                 grams.append(token[start : start + size])
-    seen = set()
+    seen: set[str] = set()
     unique: list[str] = []
     for gram in grams:
         if gram not in seen:

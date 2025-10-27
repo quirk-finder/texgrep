@@ -30,8 +30,10 @@ dev = [
     "pytest>=8.1",
     "pytest-django>=4.8",
     "pytest-asyncio>=0.23",
+    "pytest-cov>=4.1",
     "factory_boy>=3.3",
     "freezegun>=1.4",
+    "hypothesis>=6.98",
     "ruff>=0.3",
 ]
 
@@ -86,6 +88,14 @@ strict_optional = true
 # 段階的に上げる:
 disallow_untyped_defs = false
 follow_imports = "silent"
+
+[[tool.mypy.overrides]]
+module = [
+    "search.opensearch_client",
+    "search.providers.*",
+    "search.service",
+]
+disallow_untyped_defs = true
 
 [tool.django-stubs]
 django_settings_module = "texgrep.settings"

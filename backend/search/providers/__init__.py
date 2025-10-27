@@ -19,7 +19,7 @@ def get_provider_name(name: str | None = None) -> str:
     return provider_name
 
 
-def get_provider(name: str):
+def get_provider(name: str) -> SearchProvider:
     if name == "opensearch":
         return _opensearch
     if name == "zoekt":
