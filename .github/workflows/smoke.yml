@@ -78,4 +78,4 @@ jobs:
       - name: Run pytest with warnings as errors
         run: |
           cd backend
-          PYTHONPATH=backend pytest -q -W error::DeprecationWarning
+          pytest -q -W error::DeprecationWarning
