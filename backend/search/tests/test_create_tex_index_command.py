@@ -44,8 +44,10 @@ class DummyClient:
         self.indices = indices
 
 
-def test_create_tex_index_creates_index(monkeypatch, settings):
-    settings.OPENSEARCH_INDEX = "test-index"
+def test_create_tex_index_creates_index(monkeypatch):
+    monkeypatch.setattr(
+        create_tex_index.settings, "OPENSEARCH_INDEX", "test-index", raising=False
+    )
     indices = DummyIndices(exists_result=False)
     client = DummyClient(indices)
 
@@ -63,8 +65,10 @@ def test_create_tex_index_creates_index(monkeypatch, settings):
     assert not indices.refresh_calls
 
 
-def test_create_tex_index_updates_existing_index(monkeypatch, settings):
-    settings.OPENSEARCH_INDEX = "test-index"
+def test_create_tex_index_updates_existing_index(monkeypatch):
+    monkeypatch.setattr(
+        create_tex_index.settings, "OPENSEARCH_INDEX", "test-index", raising=False
+    )
     definition = {
         "settings": {"number_of_replicas": 0},
         "mappings": {"properties": {"field": {"type": "keyword"}}},
