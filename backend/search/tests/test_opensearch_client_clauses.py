@@ -1,7 +1,13 @@
 import pytest
+from hypothesis import given, strategies as st
 
-from backend.search.opensearch_client import _literal_clause, build_search_body, is_safe_regex
-from backend.search.types import SearchRequest
+from search.opensearch_client import (
+    SAFE_REGEX_MAX_LEN,
+    _literal_clause,
+    build_search_body,
+    is_safe_regex,
+)
+from search.types import SearchRequest
 
 
 @pytest.mark.parametrize(
@@ -44,6 +50,16 @@ def test_is_safe_regex_variants(pattern, expected):
 
     # Assert
     assert result is expected
+
+
+@given(st.text(max_size=100))
+def test_is_safe_regex_property_based(pattern: str) -> None:
+    result = is_safe_regex(pattern)
+    assert isinstance(result, bool)
+    if len(pattern) > SAFE_REGEX_MAX_LEN:
+        assert result is False
+    if pattern.startswith(".*") or pattern.endswith(".*"):
+        assert result is False
 
 
 def test_literal_clause_includes_command_terms():

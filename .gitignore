@@ -81,4 +81,5 @@ frontend/coverage/   # Vitest/Jest など使用時
 *.swp
 *.swo
 
-.vscode/*
+.vscode/
+.hypothesis/

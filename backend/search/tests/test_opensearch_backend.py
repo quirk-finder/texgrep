@@ -25,9 +25,11 @@ class FakeIndices:
 @dataclass
 class FakeClient:
     indices: FakeIndices
+    hits: list[dict] | None = None
 
     def __post_init__(self) -> None:
         self.last_body: dict | None = None
+        self.last_size: int | None = None
 
     def search(
         self,
@@ -39,20 +41,24 @@ class FakeClient:
         request_timeout: int | float | None = None,
     ) -> dict:
         self.last_body = body
+        self.last_size = size
+        hits = self.hits
+        if hits is None:
+            hits = [
+                {
+                    "_id": "doc-1",
+                    "_source": {
+                        "file_id": "doc-1",
+                        "path": "sections/example.tex",
+                        "url": "http://example.test/doc-1",
+                        "content": "First line\n\\iiint_{a}^{b} f(x) dx\nThird line",
+                    },
+                }
+            ]
         return {
             "hits": {
-                "hits": [
-                    {
-                        "_id": "doc-1",
-                        "_source": {
-                            "file_id": "doc-1",
-                            "path": "sections/example.tex",
-                            "url": "http://example.test/doc-1",
-                            "content": "First line\n\\iiint_{a}^{b} f(x) dx\nThird line",
-                        },
-                    }
-                ],
-                "total": {"value": 1},
+                "hits": hits,
+                "total": {"value": len(hits)},
             },
             "took": 12,
         }
@@ -151,3 +157,26 @@ def test_resolve_line_number_handles_missing_offsets(
     line_offsets, match_line, expected
 ) -> None:
     assert _resolve_line_number(line_offsets, match_line) == expected
+
+
+def test_opensearch_backend_limits_hits_to_request_size() -> None:
+    hits = [
+        {
+            "_id": f"doc-{idx}",
+            "_source": {
+                "file_id": f"doc-{idx}",
+                "path": f"doc-{idx}.tex",
+                "url": f"http://example.test/doc-{idx}",
+                "content": "match here",
+            },
+        }
+        for idx in range(5)
+    ]
+    client = FakeClient(indices=FakeIndices(), hits=hits)
+    backend = OpenSearchBackend(client=client, index_name="tex")
+    request = SearchRequest(query="foo", mode="literal", filters={}, page=1, size=2)
+
+    response = backend.search(request)
+
+    assert len(response.hits) == request.size
+    assert client.last_size == request.size

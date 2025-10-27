@@ -8,6 +8,7 @@ from typing import Any
 import django
 import pytest
 from rest_framework.test import APIClient
+from structlog.testing import capture_logs
 
 from search import views
 from search.types import SearchRequest, SearchResponse
@@ -59,15 +60,18 @@ def test_literal_search_records_end_to_end_duration(
     _install_provider(monkeypatch, fake_provider, provider_name="opensearch")
     _install_perf_counter(monkeypatch, [1.0, 1.2])
 
-    response = api_client.post(
-        "/api/search", {"q": "foo", "mode": "literal"}, format="json"
-    )
+    with capture_logs() as logs:
+        response = api_client.post(
+            "/api/search", {"q": "foo", "mode": "literal"}, format="json"
+        )
 
     assert response.status_code == 200
     data = response.json()
     assert 190 <= data["took_end_to_end_ms"] <= 210
     assert data["took_provider_ms"] == 12
     assert captured["request"].mode == "literal"
+    success_logs = [entry for entry in logs if entry["event"] == "search.success"]
+    assert success_logs and success_logs[0]["provider"] == "opensearch"
 
 
 def test_regex_search_rejected_for_non_zoekt(
@@ -85,7 +89,9 @@ def test_regex_search_rejected_for_non_zoekt(
     )
 
     assert response.status_code == 400
-    assert response.json()["message"] == "regex is only supported with Zoekt"
+    payload = response.json()
+    assert payload["message"] == "regex is only supported with Zoekt"
+    assert payload["code"] == views.INVALID_REQUEST_CODE
 
 
 def test_size_clamped_to_maximum(
@@ -130,6 +136,9 @@ def test_page_must_be_at_least_one(
     )
 
     assert response.status_code == 400
+    payload = response.json()
+    assert payload["code"] == views.INVALID_REQUEST_CODE
+    assert "page" in payload["errors"]
 
 
 def test_page_must_be_an_integer(
@@ -147,8 +156,9 @@ def test_page_must_be_an_integer(
     )
 
     assert response.status_code == 400
-    # DRF serializer の典型的なエラー文言
-    assert response.json()["page"][0] == "A valid integer is required."
+    payload = response.json()
+    assert payload["code"] == views.INVALID_REQUEST_CODE
+    assert payload["errors"]["page"][0] == "A valid integer is required."
 
 
 def test_size_string_zero_is_rejected(
@@ -166,10 +176,33 @@ def test_size_string_zero_is_rejected(
     )
 
     assert response.status_code == 400
-    # DRF serializer の min_value バリデーション
+    payload = response.json()
+    assert payload["code"] == views.INVALID_REQUEST_CODE
     assert (
-        response.json()["size"][0] == "Ensure this value is greater than or equal to 1."
+        payload["errors"]["size"][0]
+        == "Ensure this value is greater than or equal to 1."
     )
+
+
+def test_internal_error_returns_structured_payload(
+    api_client: APIClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def failing_provider(request: SearchRequest) -> SearchResponse:  # pragma: no cover - invoked in test
+        raise RuntimeError("boom")
+
+    _install_provider(monkeypatch, failing_provider, provider_name="opensearch")
+    _install_perf_counter(monkeypatch, [2.0, 2.3])
+
+    with capture_logs() as logs:
+        response = api_client.post(
+            "/api/search", {"q": "foo", "mode": "literal"}, format="json"
+        )
+
+    assert response.status_code == 500
+    payload = response.json()
+    assert payload["code"] == views.INTERNAL_ERROR_CODE
+    assert payload["message"] == "Internal server error"
+    assert any(entry["event"] == "search.internal_error" for entry in logs)
 
 
 def test_reindex_limit_must_be_numeric(
