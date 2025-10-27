@@ -198,3 +198,54 @@ def test_zoekt_provider_limits_hits_to_request_size(
 
     assert len(response.hits) == request.size
     assert [hit.line for hit in response.hits] == [1, 2, 3]
+
+
+def test_zoekt_provider_uses_fallback_snippet_when_line_matches_empty(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    content = "\n".join(["first line", "needle present", "last line"])
+    zoekt_response = {
+        "FileMatches": [
+            {
+                "Repository": "samples",
+                "FileName": "foo.tex",
+                "Checksum": "checksum",
+                "URL": "https://example.com/foo.tex",
+                "Content": content,
+                "LineMatches": [{}],
+            }
+        ],
+        "Stats": {},
+    }
+
+    class FakeTime:
+        def __init__(self) -> None:
+            self._calls = 0
+
+        def monotonic(self) -> float:
+            if self._calls == 0:
+                self._calls += 1
+                return 1.0
+            self._calls += 1
+            return 1.1
+
+    fake_time = FakeTime()
+
+    def fake_post(
+        url: str, payload: dict, *, timeout: float = zoekt.DEFAULT_TIMEOUT
+    ) -> dict:
+        assert url.endswith("/api/search")
+        return zoekt_response
+
+    monkeypatch.setenv("ZOEKT_URL", "http://zoekt.test:6070")
+    monkeypatch.setattr(zoekt, "_http_post", fake_post)
+    monkeypatch.setattr(zoekt, "time", fake_time)
+
+    request = SearchRequest(query="needle", mode="literal", filters={}, page=1, size=5)
+    response = zoekt.search(request)
+
+    assert response.total == 1
+    assert response.took_provider_ms == 100
+    assert response.hits
+    hit = response.hits[0]
+    assert hit.snippet is not None and "needle" in hit.snippet
