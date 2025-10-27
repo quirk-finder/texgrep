@@ -1,14 +1,14 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 
 import pytest
-
-import backend.search.tasks as tasks
-import search.service as service_mod
 from indexer.fetch_samples import SampleFile
+
+import search.service as service_mod
+from search import tasks
 from search.backends import SearchBackendProtocol
 from search.query import decode_literal_query, parse_payload
 from search.service import SearchService
@@ -63,7 +63,9 @@ class RecordingOpenSearchBackend(SearchBackendProtocol):
         )
 
 
-def test_reindex_task_makes_literal_commands_searchable(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_reindex_task_makes_literal_commands_searchable(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     backend = RecordingOpenSearchBackend()
     service = SearchService(backend=backend)
 
@@ -74,6 +76,7 @@ def test_reindex_task_makes_literal_commands_searchable(monkeypatch: pytest.Monk
     monkeypatch.setattr(tasks, "get_search_service", lambda: service)
     try:
         import search.tasks as tasks_alias  # 存在する場合だけ
+
         monkeypatch.setattr(tasks_alias, "get_search_service", lambda: service)
     except ImportError:
         pass
@@ -95,7 +98,9 @@ def test_reindex_task_makes_literal_commands_searchable(monkeypatch: pytest.Monk
         year="2024",
         source="samples",
     )
-    monkeypatch.setattr("indexer.build_index.fetch_samples", lambda workspace, limit=None: [sample])
+    monkeypatch.setattr(
+        "indexer.build_index.fetch_samples", lambda workspace, limit=None: [sample]
+    )
 
     # reindex_task の呼び出し先もモジュール経由に変更
     result = tasks.reindex_task()
@@ -106,6 +111,7 @@ def test_reindex_task_makes_literal_commands_searchable(monkeypatch: pytest.Monk
     assert "triple" in commands
     assert all(not c.startswith("\\") for c in commands)
 
-    response = service.search(parse_payload({"q": r"\\triple", "mode": "literal", "page": 1, "size": 5}))
+    response = service.search(
+        parse_payload({"q": r"\\triple", "mode": "literal", "page": 1, "size": 5})
+    )
     assert response.total == 1
-

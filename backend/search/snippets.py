@@ -2,15 +2,22 @@ from __future__ import annotations
 
 import html
 import re
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Iterable, List, Literal, Sequence, Tuple
+from typing import Literal
 
 from .query import (
     REGEX_TIMEOUT_SECONDS,
     decode_literal_query,
     decode_regex_query,
 )
-from .types import MathSnippetBlock, SearchMode, SearchRequest, SnippetBlock, TextSnippetBlock
+from .types import (
+    MathSnippetBlock,
+    SearchMode,
+    SearchRequest,
+    SnippetBlock,
+    TextSnippetBlock,
+)
 
 MATH_ENVIRONMENTS: set[str] = {
     "equation",
@@ -53,7 +60,7 @@ class Segment:
 @dataclass(slots=True)
 class SnippetResult:
     snippet: str
-    blocks: List[SnippetBlock]
+    blocks: list[SnippetBlock]
 
 
 def find_match(content: str, request: SearchRequest) -> MatchResult | None:
@@ -66,7 +73,9 @@ def find_match(content: str, request: SearchRequest) -> MatchResult | None:
     else:
         pattern_text = decode_regex_query(request.query)
         try:
-            pattern = re.compile(pattern_text, flags=re.MULTILINE, timeout=REGEX_TIMEOUT_SECONDS)
+            pattern = re.compile(
+                pattern_text, flags=re.MULTILINE, timeout=REGEX_TIMEOUT_SECONDS  # type: ignore[call-overload]
+            )
         except TypeError:  # pragma: no cover - Python < 3.11 fallback
             pattern = re.compile(pattern_text, flags=re.MULTILINE)
         match = pattern.search(content)
@@ -126,21 +135,23 @@ def build_snippet(
     return SnippetResult(snippet=legacy_snippet, blocks=blocks)
 
 
-def _offset_for_line(lines: List[str], target_line: int) -> int:
+def _offset_for_line(lines: list[str], target_line: int) -> int:
     offset = 0
     for idx in range(min(target_line, len(lines))):
         offset += len(lines[idx]) + 1
     return offset
 
 
-def _compute_highlight_spans(snippet_text: str, mode: SearchMode, query: str) -> List[Tuple[int, int]]:
+def _compute_highlight_spans(
+    snippet_text: str, mode: SearchMode, query: str
+) -> list[tuple[int, int]]:
     if not snippet_text:
         return []
     if mode == "literal":
         needle = decode_literal_query(query)
         if not needle:
             return []
-        spans: List[Tuple[int, int]] = []
+        spans: list[tuple[int, int]] = []
         start = 0
         while True:
             idx = snippet_text.find(needle, start)
@@ -151,7 +162,9 @@ def _compute_highlight_spans(snippet_text: str, mode: SearchMode, query: str) ->
         return spans
     pattern_text = decode_regex_query(query)
     try:
-        pattern = re.compile(pattern_text, flags=re.MULTILINE, timeout=REGEX_TIMEOUT_SECONDS)
+        pattern = re.compile(
+            pattern_text, flags=re.MULTILINE, timeout=REGEX_TIMEOUT_SECONDS  # type: ignore[call-overload]
+        )
     except TypeError:  # pragma: no cover - Python < 3.11 fallback
         pattern = re.compile(pattern_text, flags=re.MULTILINE)
     spans = []
@@ -167,9 +180,9 @@ def _build_blocks(
     snippet_start: int,
     snippet_end: int,
     segments: Sequence[Segment],
-    highlight_spans: Sequence[Tuple[int, int]],
-) -> List[SnippetBlock]:
-    blocks: List[SnippetBlock] = []
+    highlight_spans: Sequence[tuple[int, int]],
+) -> list[SnippetBlock]:
+    blocks: list[SnippetBlock] = []
     for segment in segments:
         if segment.end <= snippet_start or segment.start >= snippet_end:
             continue
@@ -183,9 +196,11 @@ def _build_blocks(
             html_content = html_content.replace("\n", "<br />")
             blocks.append(TextSnippetBlock(html=html_content))
         else:
-            prefix_len = max(segment.prefix_len - max(block_start - segment.start, 0), 0)
+            prefix_len = max(
+                segment.prefix_len - max(block_start - segment.start, 0), 0
+            )
             suffix_len = max(segment.suffix_len - max(segment.end - block_end, 0), 0)
-            math_content = block_text[prefix_len:len(block_text) - suffix_len or None]
+            math_content = block_text[prefix_len : len(block_text) - suffix_len or None]
             spans = _relative_spans(
                 block_offset + prefix_len,
                 len(math_content),
@@ -207,10 +222,10 @@ def _build_blocks(
 def _relative_spans(
     block_offset: int,
     block_length: int,
-    highlight_spans: Sequence[Tuple[int, int]],
-) -> List[Tuple[int, int]]:
+    highlight_spans: Sequence[tuple[int, int]],
+) -> list[tuple[int, int]]:
     block_end = block_offset + block_length
-    results: List[Tuple[int, int]] = []
+    results: list[tuple[int, int]] = []
     for start, end in highlight_spans:
         local_start = max(start, block_offset)
         local_end = min(end, block_end)
@@ -219,12 +234,12 @@ def _relative_spans(
     return results
 
 
-def _render_with_highlight(snippet_text: str, spans: Iterable[Tuple[int, int]]) -> str:
+def _render_with_highlight(snippet_text: str, spans: Iterable[tuple[int, int]]) -> str:
     spans_list = sorted((start, end) for start, end in spans if end > start)
     if not spans_list:
         return html.escape(snippet_text)
 
-    rendered: List[str] = []
+    rendered: list[str] = []
     cursor = 0
     for start, end in spans_list:
         if start > cursor:
@@ -238,11 +253,13 @@ def _render_with_highlight(snippet_text: str, spans: Iterable[Tuple[int, int]]) 
     return "".join(rendered)
 
 
-def _expand_tex_command_spans(tex: str, spans: Sequence[Tuple[int, int]]) -> List[Tuple[int, int]]:
-    """ハイライトが \command に掛かったとき、直後の * / [..] / 最初の {...} を含むように拡張する。"""
-    out: List[Tuple[int, int]] = []
+def _expand_tex_command_spans(
+    tex: str, spans: Sequence[tuple[int, int]]
+) -> list[tuple[int, int]]:
+    r"""ハイライトが \command に掛かったとき、直後の * / [..] / 最初の {...} を含むように拡張する。"""
+    out: list[tuple[int, int]] = []
     n = len(tex)
-    for s, e in spans:
+    for s, end0 in spans:
         if 0 <= s < n and tex[s] == "\\":  # \command に命中
             j = s + 1
             # 制御綴り名（英字列） or 1文字制御綴り
@@ -262,31 +279,38 @@ def _expand_tex_command_spans(tex: str, spans: Sequence[Tuple[int, int]]) -> Lis
                     k += 1
             # 任意の [ ... ]（入れ子は簡易対応）
             if k < n and tex[k] == "[":
-                depth = 1; k += 1
+                depth = 1
+                k += 1
                 while k < n and depth:
-                    if tex[k] == "[": depth += 1
-                    elif tex[k] == "]": depth -= 1
+                    if tex[k] == "[":
+                        depth += 1
+                    elif tex[k] == "]":
+                        depth -= 1
                     k += 1
                 while k < n and tex[k].isspace():
                     k += 1
             # 最初の { ... }（入れ子は簡易対応）
             if k < n and tex[k] == "{":
-                depth = 1; k += 1
+                depth = 1
+                k += 1
                 while k < n and depth:
-                    if tex[k] == "{": depth += 1
-                    elif tex[k] == "}": depth -= 1
+                    if tex[k] == "{":
+                        depth += 1
+                    elif tex[k] == "}":
+                        depth -= 1
                     k += 1
-            e = max(e, k)
-        out.append((s, e))
+            new_end = max(end0, k)
+        out.append((s, new_end))
     return out
 
-def _render_math_with_highlight(tex: str, spans: Iterable[Tuple[int, int]]) -> str:
+
+def _render_math_with_highlight(tex: str, spans: Iterable[tuple[int, int]]) -> str:
     spans_list = sorted((start, end) for start, end in spans if end > start)
     # ---- 追加: コマンドとその引数を丸ごと含むように拡張 ----
     spans_list = _expand_tex_command_spans(tex, spans_list)
     if not spans_list:
         return tex
-    rendered: List[str] = []
+    rendered: list[str] = []
     cursor = 0
     for start, end in spans_list:
         if start > cursor:
@@ -300,8 +324,8 @@ def _render_math_with_highlight(tex: str, spans: Iterable[Tuple[int, int]]) -> s
     return "".join(rendered)
 
 
-def _split_into_segments(content: str) -> List[Segment]:
-    segments: List[Segment] = []
+def _split_into_segments(content: str) -> list[Segment]:
+    segments: list[Segment] = []
     length = len(content)
     pos = 0
     text_start = 0
@@ -432,17 +456,21 @@ def _split_into_segments(content: str) -> List[Segment]:
 
 def _extend_to_full_segments(
     snippet_start: int, snippet_end: int, segments: Sequence[Segment]
-) -> Tuple[int, int]:
+) -> tuple[int, int]:
     extended_start = snippet_start
     extended_end = snippet_end
     for segment in segments:
-        if segment.kind == "math" and segment.end > snippet_start and segment.start < snippet_end:
+        if (
+            segment.kind == "math"
+            and segment.end > snippet_start
+            and segment.start < snippet_end
+        ):
             extended_start = min(extended_start, segment.start)
             extended_end = max(extended_end, segment.end)
     return extended_start, max(extended_end, extended_start)
 
 
-def _read_environment_name(text: str, start: int) -> Tuple[str | None, int]:
+def _read_environment_name(text: str, start: int) -> tuple[str | None, int]:
     end = text.find("}", start)
     if end == -1:
         return None, start
@@ -468,7 +496,9 @@ def _find_environment_end(text: str, name: str, pos: int) -> int | None:
         pos = match.end()
 
 
-def _find_math_delimiter(text: str, start: int, opening: str, closing: str) -> int | None:
+def _find_math_delimiter(
+    text: str, start: int, opening: str, closing: str
+) -> int | None:
     pos = start + len(opening)
     while True:
         idx = text.find(closing, pos)

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable, List, Literal, Optional
-
+from typing import Literal
 
 SnippetTextKind = Literal["text"]
 SnippetMathKind = Literal["math"]
@@ -34,7 +34,7 @@ class SearchRequest:
     filters: dict[str, str | None]
     page: int
     size: int
-    cursor: Optional[str] = None
+    cursor: str | None = None
 
 
 @dataclass(slots=True)
@@ -43,18 +43,18 @@ class SearchHit:
     path: str
     line: int
     url: str = ""
-    snippet: Optional[str] = None
-    blocks: Optional[List[SnippetBlock]] = None
+    snippet: str | None = None
+    blocks: list[SnippetBlock] | None = None
 
 
 @dataclass(slots=True)
 class SearchResponse:
-    hits: List[SearchHit]
+    hits: list[SearchHit]
     total: int
     took_provider_ms: int
     page: int
     size: int
-    next_cursor: Optional[str] = None
+    next_cursor: str | None = None
 
 
 @dataclass(slots=True)
@@ -62,8 +62,8 @@ class IndexDocument:
     file_id: str
     path: str
     url: str
-    year: Optional[str]
-    source: Optional[str]
+    year: str | None
+    source: str | None
     content: str
-    commands: Optional[Iterable[str]] = None
-    line_offsets: Optional[List[int]] = None
+    commands: Iterable[str] | None = None
+    line_offsets: list[int] | None = None

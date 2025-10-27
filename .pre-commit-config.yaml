@@ -1,0 +1,33 @@
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/psf/black
+    rev: 25.9.0
+    hooks:
+      - id: black
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.2
+    hooks:
+      - id: ruff
+        args: [--fix]   # 安全な自動修正を適用
+      # import整列だけを追加で強制したい場合（任意）
+      # - id: ruff
+      #   args: [--select, I, --fix]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.18.2
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - django-stubs
+          - djangorestframework-stubs
+          - types-requests
+          - types-redis
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending

@@ -25,8 +25,7 @@ class SearchService:
 
 
 class SearchServiceFactory(Protocol):
-    def __call__(self) -> SearchService:
-        ...
+    def __call__(self) -> SearchService: ...
 
 
 def get_search_service() -> SearchService:

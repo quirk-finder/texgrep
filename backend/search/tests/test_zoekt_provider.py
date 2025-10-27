@@ -1,19 +1,22 @@
 from __future__ import annotations
 
+from typing import TypedDict
+
 import pytest
 
-from search.providers import get_provider
-from search.providers import zoekt
+from search.providers import get_provider, zoekt
 from search.query import decode_literal_query
-from search.types import SearchRequest
+from search.types import MathSnippetBlock, SearchRequest
 
 
 def test_zoekt_provider_returns_snippet_blocks(monkeypatch: pytest.MonkeyPatch) -> None:
-    content = "\n".join([
-        r"\begin{equation}",
-        r"a \\xrightarrow{n} b",
-        r"\end{equation}",
-    ])
+    content = "\n".join(
+        [
+            r"\begin{equation}",
+            r"a \\xrightarrow{n} b",
+            r"\end{equation}",
+        ]
+    )
     zoekt_response = {
         "FileMatches": [
             {
@@ -31,38 +34,54 @@ def test_zoekt_provider_returns_snippet_blocks(monkeypatch: pytest.MonkeyPatch) 
     }
     post_call: dict = {}
 
-    def fake_post(url: str, payload: dict, *, timeout: float = zoekt.DEFAULT_TIMEOUT) -> dict:
+    def fake_post(
+        url: str, payload: dict, *, timeout: float = zoekt.DEFAULT_TIMEOUT
+    ) -> dict:
         post_call["url"] = url
         post_call["payload"] = payload
         return zoekt_response
 
     monkeypatch.setenv("ZOEKT_URL", "http://zoekt.test:6070/")
     monkeypatch.setattr(zoekt, "_http_post", fake_post)
-    monkeypatch.setattr(zoekt, "_http_get", lambda *a, **k: content)
 
-    request = SearchRequest(query=r"\\xrightarrow", mode="literal", filters={}, page=1, size=5)
+    def _raise_unexpected(*_a, **_k) -> str:
+        raise AssertionError("unexpected content fetch")
+
+    monkeypatch.setattr(zoekt, "_http_get", _raise_unexpected)
+
+    request = SearchRequest(
+        query=r"\\xrightarrow", mode="literal", filters={}, page=1, size=5
+    )
     response = zoekt.search(request)
 
     assert post_call["url"] == "http://zoekt.test:6070/api/search"
-    assert post_call["payload"]["query"]["pattern"] == decode_literal_query(request.query)
+    assert post_call["payload"]["query"]["pattern"] == decode_literal_query(
+        request.query
+    )
 
     assert response.total == 1
     assert response.took_provider_ms == 12
     assert response.hits
     hit = response.hits[0]
     assert hit.blocks is not None
-    math_blocks = [block for block in hit.blocks if getattr(block, "kind", "") == "math"]
+    math_blocks = [
+        block for block in (hit.blocks or []) if isinstance(block, MathSnippetBlock)
+    ]
     assert math_blocks, "expected math snippet blocks"
     assert "\\class{mjx-hl}{\\xrightarrow{n}}" in math_blocks[0].tex
     assert "<mark>\\xrightarrow" in (hit.snippet or "")
 
 
-def test_zoekt_provider_falls_back_when_stats_missing(monkeypatch: pytest.MonkeyPatch) -> None:
-    content = "\n".join([
-        r"\begin{equation}",
-        r"a \\xrightarrow{n} b",
-        r"\end{equation}",
-    ])
+def test_zoekt_provider_falls_back_when_stats_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    content = "\n".join(
+        [
+            r"\begin{equation}",
+            r"a \\xrightarrow{n} b",
+            r"\end{equation}",
+        ]
+    )
     zoekt_response = {
         "FileMatches": [
             {
@@ -79,11 +98,15 @@ def test_zoekt_provider_falls_back_when_stats_missing(monkeypatch: pytest.Monkey
     post_calls: list[dict] = []
     get_calls: list[dict] = []
 
-    def fake_post(url: str, payload: dict, *, timeout: float = zoekt.DEFAULT_TIMEOUT) -> dict:
+    def fake_post(
+        url: str, payload: dict, *, timeout: float = zoekt.DEFAULT_TIMEOUT
+    ) -> dict:
         post_calls.append({"url": url, "payload": payload})
         return zoekt_response
 
-    def fake_get(url: str, params: dict, *, timeout: float = zoekt.DEFAULT_TIMEOUT) -> str:
+    def fake_get(
+        url: str, params: dict, *, timeout: float = zoekt.DEFAULT_TIMEOUT
+    ) -> str:
         get_calls.append({"url": url, "params": params})
         return content
 
@@ -105,7 +128,9 @@ def test_zoekt_provider_falls_back_when_stats_missing(monkeypatch: pytest.Monkey
     monkeypatch.setattr(zoekt, "_http_get", fake_get)
     monkeypatch.setattr(zoekt, "time", fake_time)
 
-    request = SearchRequest(query=r"\\xrightarrow", mode="literal", filters={}, page=2, size=5)
+    request = SearchRequest(
+        query=r"\\xrightarrow", mode="literal", filters={}, page=2, size=5
+    )
     response = zoekt.search(request)
 
     assert response.total == 1
@@ -127,13 +152,18 @@ def test_zoekt_provider_falls_back_when_stats_missing(monkeypatch: pytest.Monkey
     assert provider is zoekt.search
 
 
-def test_zoekt_provider_limits_hits_to_request_size(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_zoekt_provider_limits_hits_to_request_size(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class LineMatch(TypedDict):
+        LineNumber: int
+        Line: str
+
     needle = "foo"
-    line_matches = [
-        {"LineNumber": idx + 1, "Line": f"{needle} line {idx}"}
-        for idx in range(10)
+    line_matches: list[LineMatch] = [
+        {"LineNumber": idx + 1, "Line": f"{needle} line {idx}"} for idx in range(10)
     ]
-    content = "\n".join(match["Line"] for match in line_matches)
+    content = "\n".join(m["Line"] for m in line_matches)
 
     zoekt_response = {
         "FileMatches": [
@@ -149,16 +179,18 @@ def test_zoekt_provider_limits_hits_to_request_size(monkeypatch: pytest.MonkeyPa
         "Stats": {"Duration": 0.01, "MatchCount": len(line_matches)},
     }
 
-    def fake_post(url: str, payload: dict, *, timeout: float = zoekt.DEFAULT_TIMEOUT) -> dict:
+    def fake_post(
+        url: str, payload: dict, *, timeout: float = zoekt.DEFAULT_TIMEOUT
+    ) -> dict:
         return zoekt_response
 
     monkeypatch.setenv("ZOEKT_URL", "http://zoekt.test:6070")
     monkeypatch.setattr(zoekt, "_http_post", fake_post)
-    monkeypatch.setattr(
-        zoekt,
-        "_http_get",
-        lambda *a, **k: (_ for _ in ()).throw(AssertionError("unexpected content fetch")),
-    )
+
+    def _raise_unexpected(*_a, **_k) -> str:
+        raise AssertionError("unexpected content fetch")
+
+    monkeypatch.setattr(zoekt, "_http_get", _raise_unexpected)
 
     request = SearchRequest(query=needle, mode="literal", filters={}, page=1, size=3)
 

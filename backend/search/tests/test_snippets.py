@@ -10,10 +10,15 @@ def test_build_snippet_literal_highlights():
     request = parse_payload({"q": r"\\newcommand", "mode": "literal"})
     match = find_match(content, request)
     assert match is not None
-    result = build_snippet(content, match, context_lines=2, mode=request.mode, query=request.query)
+    result = build_snippet(
+        content, match, context_lines=2, mode=request.mode, query=request.query
+    )
     assert "<mark>\\newcommand" in result.snippet
     assert "Some text" in result.snippet
-    assert any(isinstance(block, TextSnippetBlock) and "<mark>\\newcommand" in block.html for block in result.blocks)
+    assert any(
+        isinstance(block, TextSnippetBlock) and "<mark>\\newcommand" in block.html
+        for block in result.blocks
+    )
     assert match.line_number == 1
 
 
@@ -22,9 +27,14 @@ def test_build_snippet_regex_highlights_multiple():
     request = parse_payload({"q": r"\\\\tikz\\w+", "mode": "regex"})
     match = find_match(content, request)
     assert match is not None
-    result = build_snippet(content, match, context_lines=1, mode=request.mode, query=request.query)
+    result = build_snippet(
+        content, match, context_lines=1, mode=request.mode, query=request.query
+    )
     assert result.snippet.count("<mark>") >= 1
-    assert any(isinstance(block, TextSnippetBlock) and block.html.count("<mark>") >= 1 for block in result.blocks)
+    assert any(
+        isinstance(block, TextSnippetBlock) and block.html.count("<mark>") >= 1
+        for block in result.blocks
+    )
 
 
 def test_build_snippet_math_blocks_highlight_inside_math():
@@ -32,8 +42,12 @@ def test_build_snippet_math_blocks_highlight_inside_math():
     request = parse_payload({"q": "\\\\sum", "mode": "literal"})
     match = find_match(content, request)
     assert match is not None
-    result = build_snippet(content, match, context_lines=0, mode=request.mode, query=request.query)
-    math_blocks = [block for block in result.blocks if isinstance(block, MathSnippetBlock)]
+    result = build_snippet(
+        content, match, context_lines=0, mode=request.mode, query=request.query
+    )
+    math_blocks = [
+        block for block in result.blocks if isinstance(block, MathSnippetBlock)
+    ]
     assert len(math_blocks) == 1
     math_block = math_blocks[0]
     assert math_block.marked is True

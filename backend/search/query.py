@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import codecs
 import re
+import warnings
 from dataclasses import dataclass
 from typing import Any
-import warnings
+
 from .types import SearchMode, SearchRequest
 
 
@@ -56,7 +58,7 @@ def parse_payload(payload: dict[str, Any]) -> SearchRequest:
     filters = payload.get("filters") or {}
     if not isinstance(filters, dict):
         raise QueryValidationError("Filters must be an object")
-    normalized_filters = {}
+    normalized_filters: dict[str, str | None] = {}
     for key in ("year", "source"):
         value = filters.get(key)
         if value is None:
@@ -92,9 +94,11 @@ def validate_regex(pattern: str) -> None:
     try:
         compiled_pattern = _decode_query(pattern)
         try:
-            re.compile(compiled_pattern, flags=re.MULTILINE, timeout=REGEX_TIMEOUT_SECONDS)
+            re.compile(
+                compiled_pattern, flags=re.MULTILINE, timeout=REGEX_TIMEOUT_SECONDS  # type: ignore[call-overload]
+            )
         except TypeError:
-            re.compile(compiled_pattern, flags=re.MULTILINE)
+            re.compile(compiled_pattern, flags=re.MULTILINE)  # type: ignore[call-overload]
     except TimeoutError as exc:  # pragma: no cover - requires catastrophic input
         raise QueryValidationError("Regex pattern timed out during validation") from exc
     except re.error as exc:
@@ -103,8 +107,6 @@ def validate_regex(pattern: str) -> None:
 
 def _decode_query(query: str) -> str:
     try:
-        import codecs
-
         # unicode_escape で \w など未対応エスケープがあると DeprecationWarning が出るため抑制
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", DeprecationWarning)

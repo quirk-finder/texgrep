@@ -1,7 +1,8 @@
 # backend/search/serializers.py
 from __future__ import annotations
 
-from dataclasses import asdict, is_dataclass        # ← 追加
+from dataclasses import asdict, is_dataclass  # ← 追加
+
 from rest_framework import serializers
 
 from .query import QueryValidationError, parse_payload
@@ -19,10 +20,12 @@ class SnippetBlockSerializer(serializers.Serializer):
         kind = attrs.get("kind")
         if kind == "text":
             if "html" not in attrs:
-                raise serializers.ValidationError("Text block must include html content")
-        elif kind == "math":
-            if "tex" not in attrs:
-                raise serializers.ValidationError("Math block must include tex content")
+                raise serializers.ValidationError(
+                    "Text block must include html content"
+                )
+        elif kind == "math" and "tex" not in attrs:
+            raise serializers.ValidationError("Math block must include tex content")
+
         return attrs
 
 
@@ -58,7 +61,9 @@ class SearchResponseSerializer(serializers.Serializer):
     took_end_to_end_ms = serializers.IntegerField()
     page = serializers.IntegerField()
     size = serializers.IntegerField()
-    next_cursor = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    next_cursor = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True
+    )
 
     @classmethod
     def from_response(cls, response: SearchResponse, **extra_fields) -> dict:

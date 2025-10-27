@@ -77,7 +77,9 @@ def test_literal_search_preserves_backslash_and_highlighting() -> None:
     must_clause = client.last_body["query"]["bool"]["must"][0]
     should_clauses = must_clause["bool"]["should"]
     phrase_clause = next(item for item in should_clauses if "match_phrase" in item)
-    assert phrase_clause["match_phrase"]["content"]["query"] == decode_literal_query(request.query)
+    assert phrase_clause["match_phrase"]["content"]["query"] == decode_literal_query(
+        request.query
+    )
     highlight = client.last_body["highlight"]["fields"]["content"]
     assert highlight["type"] == "fvh"
 
@@ -87,8 +89,8 @@ def test_literal_search_preserves_backslash_and_highlighting() -> None:
     assert response.size == 5
     hit = response.hits[0]
     assert hit.line == 2
-    assert "<mark>\\iiint</mark>_{a}^{b}" in hit.snippet
-    assert "Third line" in hit.snippet
+    assert "<mark>\\iiint</mark>_{a}^{b}" in (hit.snippet or "")
+    assert "Third line" in (hit.snippet or "")
     assert hit.blocks is not None
     assert any(
         "<mark>\\iiint" in getattr(block, "html", "")

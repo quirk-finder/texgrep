@@ -15,7 +15,11 @@ class Command(BaseCommand):
         index_name = settings.OPENSEARCH_INDEX
         definition = get_index_definition()
         if client.indices.exists(index=index_name):
-            self.stdout.write(self.style.WARNING(f"Index '{index_name}' already exists. Updating mapping."))
+            self.stdout.write(
+                self.style.WARNING(
+                    f"Index '{index_name}' already exists. Updating mapping."
+                )
+            )
             update_index(client, index_name, definition)
             self.stdout.write(self.style.SUCCESS(f"Updated index '{index_name}'"))
             return

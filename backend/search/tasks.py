@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import structlog
 from celery import shared_task
-
 from indexer.build_index import build_index
 
 from .service import get_search_service

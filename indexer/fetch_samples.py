@@ -4,7 +4,7 @@ import hashlib
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, List
+from typing import List
 
 SAMPLE_DATA_DIR = Path(__file__).resolve().parent / "sample_corpus"
 

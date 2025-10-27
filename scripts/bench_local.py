@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Iterable
 
 if TYPE_CHECKING:  # pragma: no cover - import guard for optional dependency
-    import httpx
+    pass
 
 
 def _build_seed_queries() -> list[tuple[str, str]]:
@@ -190,6 +190,7 @@ async def _run_payloads(
     semaphore = asyncio.Semaphore(concurrency)
 
     async with httpx.AsyncClient(base_url=base_url, timeout=timeout) as client:
+
         async def send(payload: dict) -> None:
             async with semaphore:
                 start = time.perf_counter()
@@ -204,7 +205,9 @@ async def _run_payloads(
                 try:
                     data = response.json()
                 except ValueError:
-                    errors.append(f"{payload['mode']} {payload['q']}: invalid JSON response")
+                    errors.append(
+                        f"{payload['mode']} {payload['q']}: invalid JSON response"
+                    )
                     return
 
                 took = data.get("took_ms")
@@ -228,8 +231,11 @@ def run_benchmark(
     provider: str | None = None,
 ) -> BenchmarkResult:
     # OpenSearch では regex 検索を受け付けないため、Zoekt 以外は literal のみを使う
-    seeds = SEED_QUERIES if (provider and provider.lower() == "zoekt") \
+    seeds = (
+        SEED_QUERIES
+        if (provider and provider.lower() == "zoekt")
         else [s for s in SEED_QUERIES if s[1] == "literal"]
+    )
     payloads = []
     for _ in range(total_requests):
         query, mode = rng.choice(seeds)
@@ -266,8 +272,12 @@ def run_benchmark(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Benchmark the /api/search endpoint")
-    parser.add_argument("--base-url", default="http://backend:8000", help="API base URL")
-    parser.add_argument("--requests", type=int, default=200, help="Number of requests to send")
+    parser.add_argument(
+        "--base-url", default="http://backend:8000", help="API base URL"
+    )
+    parser.add_argument(
+        "--requests", type=int, default=200, help="Number of requests to send"
+    )
     parser.add_argument(
         "--concurrency",
         type=int,
@@ -285,7 +295,9 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Index provider identifier (accepted for compatibility, not sent to the API)",
     )
-    parser.add_argument("--seed", type=int, default=None, help="Random seed for reproducibility")
+    parser.add_argument(
+        "--seed", type=int, default=None, help="Random seed for reproducibility"
+    )
     parser.add_argument(
         "--max-error-rate",
         type=float,

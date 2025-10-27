@@ -1,21 +1,84 @@
+# =========================
+# OS / Editors
+# =========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =========================
+# Python / Django
+# =========================
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
 *.pyd
+*.so
 *.sqlite3
+*.log
+
+.venv/
 .env
 .env.*
-.idea/
-.vscode/
-node_modules/
-frontend/dist/
-backend/staticfiles/
-.DS_Store
-.venv/
+.envrc
+.python-version
+
+# Django collectstatic 出力
+**/staticfiles/
+
+# 必要ならユーザーアップロード（使っていなければコメントのまま）
+# **/media/
+
+# =========================
+# Packaging / Build
+# =========================
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# =========================
+# Test / Coverage
+# =========================
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# =========================
+# Type-check / Lint Caches
+# =========================
+.mypy_cache/
+.ruff_cache/
+.cache/
+
+# =========================
+# Project-specific
+# =========================
 .ssh/
 
-# --- Frontend (Vite/React/Tailwind) ---
+# =========================
+# Frontend (Vite/React/Tailwind)
+# =========================
+node_modules/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
 frontend/.eslintcache
+frontend/coverage/   # Vitest/Jest など使用時
+
+# （必要になったら解除）
+# frontend/.turbo/
+# frontend/.parcel-cache/
+# frontend/.next/    # Next.js の場合
+# frontend/.nuxt/    # Nuxt の場合
+
+# =========================
+# Misc
+# =========================
+*.orig
+*.rej
+*.bak
+*.swp
+*.swo
+
+.vscode/*
