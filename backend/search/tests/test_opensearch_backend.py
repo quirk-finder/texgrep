@@ -2,8 +2,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from search.backends import OpenSearchBackend, get_index_definition
+import pytest
+
+from search.backends import (
+    OpenSearchBackend,
+    _process_hits,
+    _resolve_line_number,
+    get_index_definition,
+)
 from search.query import decode_literal_query, parse_payload
+from search.types import SearchRequest
 
 
 class FakeIndices:
@@ -97,3 +105,49 @@ def test_literal_search_preserves_backslash_and_highlighting() -> None:
         for block in hit.blocks
         if block.kind == "text"
     )
+
+
+@pytest.mark.parametrize("line_offsets", [None, []])
+def test_process_hits_returns_fallback_snippet_without_match(
+    monkeypatch: pytest.MonkeyPatch, line_offsets
+) -> None:
+    monkeypatch.setattr(
+        "search.backends.settings.SEARCH_CONFIG",
+        {"snippet_lines": 2},
+        raising=False,
+    )
+    monkeypatch.setattr("search.backends.find_match", lambda content, request: None)
+
+    request = SearchRequest(
+        query="foo",
+        mode="literal",
+        filters={},
+        page=1,
+        size=5,
+    )
+
+    source: dict = {"content": "first line\nsecond line\nthird line"}
+    if line_offsets is not None:
+        source["line_offsets"] = line_offsets
+
+    hits = _process_hits([{"_source": source}], request)
+
+    assert len(hits) == 1
+    assert hits[0].snippet == "first line\nsecond line"
+    assert hits[0].line == 1
+
+
+@pytest.mark.parametrize(
+    "line_offsets, match_line, expected",
+    [
+        (None, 4, 4),
+        ([], 2, 2),
+        ([1, 2, 3], 2, 2),
+        ([10, 0, 30], 2, 2),
+        ([10, 20, 30, 40], 4, 40),
+    ],
+)
+def test_resolve_line_number_handles_missing_offsets(
+    line_offsets, match_line, expected
+) -> None:
+    assert _resolve_line_number(line_offsets, match_line) == expected

@@ -31,6 +31,7 @@ def test_literal_clause_should_variants(query, expected_norm, expected_alt):
     [
         ("abc", True),
         ("a+", False),  # unsafe quantifier should be rejected
+        ("a" * 65, False),  # overly long patterns are rejected early
     ],
 )
 def test_is_safe_regex_variants(pattern, expected):
@@ -39,6 +40,20 @@ def test_is_safe_regex_variants(pattern, expected):
 
     # Assert
     assert result is expected
+
+
+def test_literal_clause_includes_command_terms():
+    clause = _literal_clause(r"\\gamma")
+
+    should = clause["bool"]["should"]
+
+    term_clause = next(item for item in should if "term" in item)
+    assert term_clause == {"term": {"commands": "gamma"}}
+
+    prefix_clause = next(item for item in should if "match" in item)
+    assert prefix_clause == {
+        "match": {"commands.prefix": {"query": "gamma", "operator": "and"}}
+    }
 
 
 def test_build_search_body_constructs_literal_should_clause():
@@ -64,4 +79,31 @@ def test_build_search_body_constructs_literal_should_clause():
     }
     assert should_queries == {"foo", r"\foo"}  # literal and escaped variant searched
     assert body["query"]["bool"]["filter"] == [{"term": {"year": "2023"}}]
+
+
+def test_build_search_body_uses_ngram_clause_for_unsafe_regex():
+    request = SearchRequest(
+        query="a" * 70,
+        mode="regex",
+        filters={"source": "samples"},
+        page=1,
+        size=5,
+    )
+
+    body = build_search_body(request)
+
+    must_clause = body["query"]["bool"]["must"][0]
+    assert "bool" in must_clause
+    assert must_clause["bool"]["must"]
+
+    highlight = body["highlight"]
+    assert highlight["pre_tags"] == ["<mark>"]
+    assert highlight["post_tags"] == ["</mark>"]
+    assert highlight["fields"]["content"] == {
+        "type": "fvh",
+        "number_of_fragments": 0,
+    }
+
+    filters = body["query"]["bool"]["filter"]
+    assert filters == [{"term": {"source": "samples"}}]
 

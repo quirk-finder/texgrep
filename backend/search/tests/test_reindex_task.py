@@ -52,7 +52,7 @@ class RecordingOpenSearchBackend(SearchBackendProtocol):
                         url=doc.url,
                         snippet=doc.content,
                     )
-                )
+        )
         return SearchResponse(
             hits=hits,
             total=len(hits),
@@ -63,25 +63,30 @@ class RecordingOpenSearchBackend(SearchBackendProtocol):
         )
 
 
-def test_reindex_task_makes_literal_commands_searchable(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def _configure_reindex_service(
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[RecordingOpenSearchBackend, SearchService]:
     backend = RecordingOpenSearchBackend()
     service = SearchService(backend=backend)
 
-    # reset_index はどのサービスでも no-op に
     monkeypatch.setattr(service_mod.SearchService, "reset_index", lambda self: None)
-
-    # tasks 側が取得するサービスを強制的に差し替え（両方のモジュール名にパッチ）
     monkeypatch.setattr(tasks, "get_search_service", lambda: service)
+
     try:
-        import search.tasks as tasks_alias  # 存在する場合だけ
+        import search.tasks as tasks_alias
 
         monkeypatch.setattr(tasks_alias, "get_search_service", lambda: service)
     except ImportError:
         pass
 
-    # 以下はそのまま
+    return backend, service
+
+
+def test_reindex_task_makes_literal_commands_searchable(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    backend, service = _configure_reindex_service(monkeypatch)
+
     sample_path = tmp_path / "example.tex"
     sample_path.write_text(
         "\\documentclass{article}\n"
@@ -115,3 +120,32 @@ def test_reindex_task_makes_literal_commands_searchable(
         parse_payload({"q": r"\\triple", "mode": "literal", "page": 1, "size": 5})
     )
     assert response.total == 1
+
+
+def test_reindex_task_respects_limit_argument(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    backend, _ = _configure_reindex_service(monkeypatch)
+
+    sample_path = tmp_path / "limited.tex"
+    sample_path.write_text("\\begin{document}Limit test\\end{document}", encoding="utf-8")
+    sample = SampleFile(
+        file_id="samples:limited",
+        path=sample_path,
+        url="https://example.com/samples/limited.tex",
+        year="2024",
+        source="samples",
+    )
+
+    captured: dict[str, int | None] = {}
+
+    def _fake_fetch(workspace, limit=None):  # type: ignore[no-untyped-def]
+        captured["limit"] = limit
+        return [sample]
+
+    monkeypatch.setattr("indexer.build_index.fetch_samples", _fake_fetch)
+
+    result = tasks.reindex_task(limit=1)
+    assert result == {"count": 1}
+    assert captured.get("limit") == 1
+    assert backend.documents
